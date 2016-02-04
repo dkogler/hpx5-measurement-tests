@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+URL="http://stout.crest.iu.edu/hpx"
+DIR=$(mktemp -d "${TMPDIR:-/tmp}"/hpx.XXXXXXX)
+CONTRIB=contrib
+
+# set the array of tarball deps here
+contrib_tars=("photon-1.1.tar.bz2" "libcuckoo-b6e84f2.tar.gz"
+              "jemalloc-4.0.4.tar.bz2" "libffi-e9de7e3.tar.gz")
+# set matching md5sums for each tarball
+contrib_md5=("d4982ed1a51856c7f93b514eb36fbd0f" "665b2d3e65002c519bdc8dc5a86421e3"
+             "687c5cc53b9a7ab711ccd680351ff988" "c3f381d8fd2fd611b472fb4971c4f546")
+# and matching target contrib directories
+contrib_dirs=("photon" "libcuckoo" "jemalloc" "libffi")
+
+# set the command to fetch the tarballs
+CMD="wget --quiet  -O"
+if ! type "wget" > /dev/null; then
+  CMD="curl --silent -o"
+fi
+
+echo -n "Downloading and extracting contrib tarballs..."
+for ((i=0; i<${#contrib_tars[@]}; i++)); do
+  dir=${contrib_dirs[$i]}
+  file=${contrib_tars[$i]}
+  md5=${contrib_md5[$i]}
+
+  if [ -f ${CONTRIB}/$dir/.md5 ]; then
+      omd5=`cat ${CONTRIB}/$dir/.md5`
+  else
+      omd5=""
+  fi
+
+  if [ ! -f ${CONTRIB}/$dir/configure ] || [ ! "$omd5" == "$md5" ]; then
+      echo -n "$dir..."
+      $CMD ${DIR}/$file ${URL}/$dir/$md5/$file
+      if [ $? -ne 0 ]; then
+	  echo
+	  echo "!!! Error downloading $dir contrib with md5sum $md5"
+	  continue
+      fi
+      mkdir -p ${CONTRIB}/$dir
+      tar --strip-components=1 -xf ${DIR}/$file -C ${CONTRIB}/$dir
+      echo -n $md5 > ${CONTRIB}/$dir/.md5
+  fi
+done
+rm -rf ${DIR}
+echo "DONE"
+
+set -e
+autoreconf --force --install -I config || exit 1
+rm -rf autom4te.cache
