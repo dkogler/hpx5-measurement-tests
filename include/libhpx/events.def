@@ -1,0 +1,102 @@
+// -*- C -*- ===================================================================
+//  High Performance ParalleX Library (libhpx)
+//
+//  Copyright (c) 2013-2016, Trustees of Indiana University,
+//  All rights reserved.
+//
+//  This software may be modified and distributed under the terms of the BSD
+//  license.  See the COPYING file for details.
+//
+//  This software was created at the Indiana University Center for Research in
+//  Extreme Scale Technologies (CREST).
+// =============================================================================
+
+/// Standard declarative trace events list, designed for multiple inclusion. Before
+/// including this file #define the LIBHPX_EVENT() macro.
+
+/// LIBHPX_EVENT(class, event, args1, ..., args4)
+///
+/// This generic macro can be used to create expansions for all of the macros in
+/// this file.
+///
+/// @param     class The trace class.
+/// @param     event The trace event ID.
+/// @param      arg1 The first argument.
+/// @param      arg2 The second argument.
+/// @param      arg3 The third argument.
+/// @param      arg4 The fourth argument.
+/// @param      arg5 The fifth argument.
+
+/// Parcel events
+/// @{
+LIBHPX_EVENT(PARCEL, CREATE, int, hpx_action_t, size_t, int)
+LIBHPX_EVENT(PARCEL, SEND, int, hpx_action_t, size_t, int, hpx_addr_t)
+LIBHPX_EVENT(PARCEL, RECV, int, hpx_action_t, size_t, int, hpx_addr_t)
+LIBHPX_EVENT(PARCEL, RUN, int, hpx_action_t, size_t)
+LIBHPX_EVENT(PARCEL, END, int, hpx_action_t)
+LIBHPX_EVENT(PARCEL, SUSPEND, int, hpx_action_t)
+LIBHPX_EVENT(PARCEL, RESUME, int, hpx_action_t)
+LIBHPX_EVENT(PARCEL, RESEND, int, hpx_action_t, size_t, hpx_addr_t)
+/// @}
+
+/// Network PWC events
+/// @{
+LIBHPX_EVENT(NETWORK_PWC, SEND)
+LIBHPX_EVENT(NETWORK_PWC, RECV)
+/// @}
+
+/// Scheduler events
+/// @{
+LIBHPX_EVENT(SCHED, WQSIZE, size_t)
+LIBHPX_EVENT(SCHED, PUSH_LIFO, hpx_parcel_t*)
+LIBHPX_EVENT(SCHED, POP_LIFO, hpx_parcel_t*)
+LIBHPX_EVENT(SCHED, STEAL_LIFO, hpx_parcel_t*, int)
+LIBHPX_EVENT(SCHED, ENTER)
+LIBHPX_EVENT(SCHED, EXIT)
+/// @}
+
+/// LCO events
+/// @{
+LIBHPX_EVENT(LCO, INIT, void*, uint64_t)
+LIBHPX_EVENT(LCO, DELETE, void*, uint64_t)
+LIBHPX_EVENT(LCO, SET, void*, uint64_t)
+LIBHPX_EVENT(LCO, RESET, void*, uint64_t)
+LIBHPX_EVENT(LCO, ATTACH_PARCEL, void*, uint64_t)
+LIBHPX_EVENT(LCO, WAIT, void*, uint64_t)
+LIBHPX_EVENT(LCO, TRIGGER, void*, uint64_t)
+/// @}
+
+/// Process events
+/// @{
+LIBHPX_EVENT(PROCESS, NEW, hpx_addr_t, hpx_addr_t)
+LIBHPX_EVENT(PROCESS, CALL, hpx_addr_t, hpx_pid_t)
+LIBHPX_EVENT(PROCESS, DELETE, hpx_addr_t)
+/// @}
+
+/// Memory events
+/// @{
+LIBHPX_EVENT(MEMORY, REGISTERED_ALLOC, void*, size_t, size_t)
+LIBHPX_EVENT(MEMORY, REGISTERED_FREE, void*)
+LIBHPX_EVENT(MEMORY, GLOBAL_ALLOC, void*, size_t, size_t)
+LIBHPX_EVENT(MEMORY, GLOBAL_FREE, void*)
+LIBHPX_EVENT(MEMORY, CYCLIC_ALLOC, void*, size_t, size_t)
+LIBHPX_EVENT(MEMORY, CYCLIC_FREE, void*)
+LIBHPX_EVENT(MEMORY, ENTER_ALLOC_FREE)
+/// @}
+
+/// Scheduler timing events
+/// @{
+LIBHPX_EVENT(SCHEDTIMES, SCHED, int, int)
+LIBHPX_EVENT(SCHEDTIMES, PROBE)
+LIBHPX_EVENT(SCHEDTIMES, PROGRESS)
+/// @}
+
+/// Bookkeeping events
+/// @{
+LIBHPX_EVENT(BOOKEND, BOOKEND)
+/// @}
+
+/// GAS events
+/// @{
+LIBHPX_EVENT(GAS, ACCESS, int, int, hpx_addr_t, size_t)
+/// @}

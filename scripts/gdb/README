@@ -1,0 +1,17 @@
+This folder contains scripts that add new commands to GDB. These new commands 
+enhanced support for debugging HPX applications.
+
+To add these commands to GDB append the following lines to '.gdbinit' file in 
+your home directory.
+
+directory [ABSOLUTE PATH WHERE THE SCRIPTS ARE PRESENT]
+source hpx_prefix_cmd.py
+source print_var.py
+source cmd_parcel.py
+source hpx_frame_filter.py
+
+Commands List:
+hpx print
+info parcels
+
+Use the 'help' command to learn about the usage for these commands.
