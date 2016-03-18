@@ -53,18 +53,18 @@ static int _initDomain_handler(Domain *domain, hpx_addr_t newdt,
 static HPX_ACTION(HPX_DEFAULT, HPX_PINNED, _initDomain, _initDomain_handler,
                   HPX_POINTER, HPX_ADDR, HPX_ADDR, HPX_INT, HPX_INT);
 
-static HPX_ACTION_DECL(_advanceDomain_allgather);
-static int _advanceDomain_allgather_handler(Domain *domain,
-                                            unsigned long epoch) {
+static HPX_ACTION_DECL(_advanceDomain_gather);
+static int _advanceDomain_gather_handler(Domain *domain, int id,
+                                         unsigned long epoch) {
   if (domain->maxCycles <= domain->cycle) {
     hpx_lco_set(domain->complete, 0, NULL, HPX_NULL, HPX_NULL);
     return HPX_SUCCESS;
   }
 
-  // Compute my gnewdt, and then start the allgather
+  // Compute my gnewdt, and then start the gather
   double gnewdt = 3.14 * (domain->rank + 1) + domain->cycle;
-  hpx_lco_allgather_setid(domain->newdt, domain->rank, sizeof(double), &gnewdt,
-                          HPX_NULL, HPX_NULL);
+  hpx_lco_gather_setid(domain->newdt, id, sizeof(double), &gnewdt,
+                       HPX_NULL, HPX_NULL);
 
   // Get the gathered value, and print the debugging string.
   double newdt[domain->nDoms];
@@ -73,20 +73,20 @@ static int _advanceDomain_allgather_handler(Domain *domain,
   ++domain->cycle;
   unsigned long next = epoch + 1;
   hpx_addr_t local = hpx_thread_current_target();
-  return hpx_call(local, _advanceDomain_allgather, HPX_NULL, &next);
+  return hpx_call(local, _advanceDomain_gather, HPX_NULL, &id, &next);
 }
-static HPX_ACTION(HPX_DEFAULT, HPX_PINNED, _advanceDomain_allgather,
-                  _advanceDomain_allgather_handler, HPX_POINTER, HPX_ULONG);
+static HPX_ACTION(HPX_DEFAULT, HPX_PINNED, _advanceDomain_gather,
+                  _advanceDomain_gather_handler, HPX_POINTER, HPX_INT, HPX_ULONG);
 
-static int lco_allgather_handler(void) {
+static int lco_gather_handler(void) {
   int nDoms = 8;
-  int maxCycles = 100;
+  int maxCycles = 1;
 
   hpx_addr_t domain = hpx_gas_calloc_cyclic(nDoms, sizeof(Domain), sizeof(Domain));
   hpx_addr_t done = hpx_lco_and_new(nDoms);
   hpx_addr_t complete = hpx_lco_and_new(nDoms);
 
-  hpx_addr_t newdt = hpx_lco_allgather_new(nDoms, sizeof(double));
+  hpx_addr_t newdt = hpx_lco_gather_new(nDoms, nDoms, sizeof(double));
 
   for (int i = 0, e = nDoms; i < e; ++i) {
     hpx_addr_t block = hpx_addr_add(domain, sizeof(Domain) * i, sizeof(Domain));
@@ -99,7 +99,7 @@ static int lco_allgather_handler(void) {
   const unsigned long epoch = 0;
   for (int i = 0, e = nDoms; i < e; ++i) {
     hpx_addr_t block = hpx_addr_add(domain, sizeof(Domain) * i, sizeof(Domain));
-    hpx_call(block, _advanceDomain_allgather, HPX_NULL, &epoch);
+    hpx_call(block, _advanceDomain_gather, HPX_NULL, &i, &epoch);
   }
 
   hpx_lco_wait(complete);
@@ -108,7 +108,7 @@ static int lco_allgather_handler(void) {
   hpx_gas_free(domain, HPX_NULL);
   return HPX_SUCCESS;
 }
-static HPX_ACTION(HPX_DEFAULT, 0, lco_allgather, lco_allgather_handler);
+static HPX_ACTION(HPX_DEFAULT, 0, lco_gather, lco_gather_handler);
 
 static HPX_ACTION_DECL(_advanceDomain_alltoall);
 static int _advanceDomain_alltoall_handler(Domain *domain, unsigned long epoch) {
@@ -172,6 +172,6 @@ static int lco_alltoall_handler(void) {
 static HPX_ACTION(HPX_DEFAULT, 0, lco_alltoall, lco_alltoall_handler);
 
 TEST_MAIN({
-  ADD_TEST(lco_allgather, 0);
+  ADD_TEST(lco_gather, 0);
   ADD_TEST(lco_alltoall, 0);
 });

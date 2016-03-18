@@ -210,6 +210,7 @@ static int _reduce_release(lco_t *lco, void *out) {
 
 // vtable
 static const lco_class_t _reduce_vtable = {
+  .type        = LCO_REDUCE,
   .on_fini     = _reduce_fini,
   .on_error    = _reduce_error,
   .on_set      = _reduce_set,
@@ -221,6 +222,10 @@ static const lco_class_t _reduce_vtable = {
   .on_reset    = _reduce_reset,
   .on_size     = _reduce_size
 };
+
+static void HPX_CONSTRUCTOR _register_vtable(void) {
+  lco_vtables[LCO_REDUCE] = &_reduce_vtable;
+}
 
 static int _reduce_init_handler(_reduce_t *r, int inputs, size_t size,
                                 hpx_action_t id, hpx_action_t op) {
@@ -257,7 +262,7 @@ static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _reduce_init_async,
 hpx_addr_t hpx_lco_reduce_new(int inputs, size_t size, hpx_action_t id,
                               hpx_action_t op) {
   _reduce_t *r = NULL;
-  hpx_addr_t gva = hpx_gas_alloc_local(1, sizeof(*r), 0);
+  hpx_addr_t gva = lco_alloc_local(1, sizeof(*r), 0);
 
   if (!hpx_gas_try_pin(gva, (void**)&r)) {
     int e = hpx_call_sync(gva, _reduce_init_async, NULL, 0, &inputs, &size, &id,
@@ -274,8 +279,8 @@ hpx_addr_t hpx_lco_reduce_new(int inputs, size_t size, hpx_action_t id,
 }
 
 /// Initialize a block of array of lco.
-static int _block_local_init_handler(void *lco, int n, int inputs, size_t size,
-                                     hpx_action_t id, hpx_action_t op) {
+static int _block_init_handler(void *lco, int n, int inputs, size_t size,
+                               hpx_action_t id, hpx_action_t op) {
   for (int i = 0; i < n; i++) {
     void *addr = (void *)((uintptr_t)lco + i * (sizeof(_reduce_t) + size));
     _reduce_init_handler(addr, inputs, size, id, op);
@@ -283,8 +288,7 @@ static int _block_local_init_handler(void *lco, int n, int inputs, size_t size,
 
   return HPX_SUCCESS;
 }
-static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _block_local_init,
-                     _block_local_init_handler,
+static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _block_init, _block_init_handler,
                      HPX_POINTER, HPX_INT, HPX_INT, HPX_SIZE_T,
                      HPX_POINTER, HPX_POINTER);
 
@@ -303,9 +307,10 @@ hpx_addr_t hpx_lco_reduce_local_array_new(int n, int inputs, size_t size,
                                           hpx_action_t op) {
   uint32_t lco_bytes = sizeof(_reduce_t) + size;
   dbg_assert(n * lco_bytes < UINT32_MAX);
-  hpx_addr_t base = hpx_gas_alloc_local(n, lco_bytes, 0);
+  hpx_addr_t base = lco_alloc_local(n, lco_bytes, 0);
 
-  int e = hpx_call_sync(base, _block_local_init, NULL, 0, &n, &inputs, &size, &id, &op);
+  int e = hpx_call_sync(base, _block_init, NULL, 0, &n, &inputs, &size,
+                        &id, &op);
   dbg_check(e, "call of _block_init_action failed\n");
 
   // return the base address of the allocation

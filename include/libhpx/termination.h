@@ -10,6 +10,7 @@
 //  This software was created at the Indiana University Center for Research in
 //  Extreme Scale Technologies (CREST).
 // =============================================================================
+
 #ifndef LIBHPX_TERMINATION_H
 #define LIBHPX_TERMINATION_H
 
@@ -42,7 +43,7 @@ typedef _bitmap_word_t *_bitmap_page_t;
 // default number of pages (of _bitmap_num_words) at initialization
 #define _bitmap_num_pages 512
 
-// the bitmap structure used for credit tracking
+/// the bitmap structure used for credit tracking
 typedef struct {
   _bitmap_page_t volatile(page);
 } bitmap_t;

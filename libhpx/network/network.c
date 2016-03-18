@@ -23,7 +23,8 @@
 #include <libhpx/network.h>
 #include "isir/isir.h"
 #include "pwc/pwc.h"
-#include "coalesced_network.h"
+#include "coalesced.h"
+#include "compressed.h"
 #include "inst.h"
 #include "smp.h"
 
@@ -42,7 +43,8 @@ network_t *network_new(config_t *cfg, boot_t *boot, struct gas *gas) {
   // default to HPX_NETWORK_SMP for SMP execution
   if (ranks == 1 && cfg->opt_smp) {
     if (type != HPX_NETWORK_SMP && type != HPX_NETWORK_DEFAULT) {
-      log_level(LEVEL, "%s overriden to SMP.\n", HPX_NETWORK_TO_STRING[type]);
+      log_level(LEVEL, "%s overridden to SMP.\n", HPX_NETWORK_TO_STRING[type]);
+      cfg->network = HPX_NETWORK_SMP;
     }
     type = HPX_NETWORK_SMP;
   }
@@ -106,15 +108,19 @@ network_t *network_new(config_t *cfg, boot_t *boot, struct gas *gas) {
     log_level(LEVEL, "%s network initialized\n", HPX_NETWORK_TO_STRING[type]);
   }
 
+  if (cfg->parcel_compression) {
+    network = compressed_network_new(network);
+  }
+
   if (cfg->coalescing_buffersize) {
-    network =  coalesced_network_new(network, cfg);
+    network = coalesced_network_new(network, cfg);
   }
 
   if (!config_inst_at_isset(here->config, here->rank)) {
     return network;
   }
 
-  if (!inst_trace_class(HPX_INST_SCHEDTIMES)) {
+  if (!inst_trace_class(HPX_TRACE_SCHEDTIMES)) {
     return network;
   }
 

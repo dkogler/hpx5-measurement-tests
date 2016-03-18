@@ -11,6 +11,7 @@ AC_DEFUN([HPX_DO_AC_CONFIG_FILES], [
    hpx.pc
    Makefile
    contrib/Makefile
+   contrib/lz4/Makefile
    libsync/Makefile
    libsync/arch/Makefile
    libhpx/Makefile

@@ -261,6 +261,7 @@ static gas_t _pgas_vtable = {
   .alloc_local    = _pgas_gas_alloc_local,
   .calloc_local   = _pgas_gas_calloc_local,
   .free           = _pgas_gas_free,
+  .set_attr       = NULL,
   .move           = _pgas_move,
   .owner_of       = _pgas_owner_of
 };

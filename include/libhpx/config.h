@@ -148,41 +148,50 @@ static const char * const HPX_SCHED_POLICY_TO_STRING[] = {
 #define HPX_LOG_COLL    2048            //!< Log collectives
 
 static const char *const HPX_LOG_LEVEL_TO_STRING[] = {
-  "default",
-  "boot",
-  "sched",
-  "gas",
-  "lco",
-  "net",
-  "trans",
-  "parcel",
-  "action",
-  "config",
-  "memory"
+  "DEFAULT",
+  "BOOT",
+  "SCHED",
+  "GAS",
+  "LCO",
+  "NET",
+  "TRANS",
+  "PARCEL",
+  "ACTION",
+  "CONFIG",
+  "MEMORY"
 };
 
-#define HPX_TRACE_PARCELS   (UINT64_C(1) << 0)
-#define HPX_TRACE_PWC       (UINT64_C(1) << 1)
-#define HPX_TRACE_SCHED     (UINT64_C(1) << 2)
-#define HPX_TRACE_LCO       (UINT64_C(1) << 3)
-#define HPX_TRACE_PROCESS   (UINT64_C(1) << 4)
-#define HPX_TRACE_MEMORY    (UINT64_C(1) << 5)
+//! Configuration options for instrumentation in HPX.
+#define HPX_TRACE_PARCEL      (UINT64_C(1) << 0)
+#define HPX_TRACE_NETWORK_PWC (UINT64_C(1) << 1)
+#define HPX_TRACE_SCHED       (UINT64_C(1) << 2)
+#define HPX_TRACE_LCO         (UINT64_C(1) << 3)
+#define HPX_TRACE_PROCESS     (UINT64_C(1) << 4)
+#define HPX_TRACE_MEMORY      (UINT64_C(1) << 5)
+#define HPX_TRACE_SCHEDTIMES  (UINT64_C(1) << 6)
+#define HPX_TRACE_BOOKEND     (UINT64_C(1) << 7)
+#define HPX_TRACE_GAS         (UINT64_C(1) << 8)
 
 static const char *const HPX_TRACE_CLASS_TO_STRING[] = {
-  "parcels",
-  "pwc",
-  "sched",
-  "lco",
-  "process",
-  "memory",
-  "schedtimes",
-  "all"
+  "PARCEL",
+  "NETWORK_PWC",
+  "SCHED",
+  "LCO",
+  "PROCESS",
+  "MEMORY",
+  "SCHEDTIMES",
+  "BOOKEND",
+  "GAS"
 };
 
+//! Configuration options for profiling in HPX.
 typedef enum {
  HPX_L1_TCM = 0,
+ HPX_L1_TCA,
  HPX_L2_TCM,
+ HPX_L2_TCA,
  HPX_L3_TCM,
+ HPX_L3_TCA,
  HPX_TLB_TL,
  HPX_TOT_INS,
  HPX_INT_INS,
@@ -195,8 +204,11 @@ typedef enum {
 } libhpx_hw_counters_t;
 
 #define HPX_PROF_L1_TCM    (UINT64_C(1) << HPX_L1_TCM)
+#define HPX_PROF_L1_TCA    (UINT64_C(1) << HPX_L1_TCA)
 #define HPX_PROF_L2_TCM    (UINT64_C(1) << HPX_L2_TCM)
+#define HPX_PROF_L2_TCA    (UINT64_C(1) << HPX_L2_TCA)
 #define HPX_PROF_L3_TCM    (UINT64_C(1) << HPX_L3_TCM)
+#define HPX_PROF_L3_TCA    (UINT64_C(1) << HPX_L3_TCA)
 #define HPX_PROF_TLB_TL    (UINT64_C(1) << HPX_TLB_TL)
 #define HPX_PROF_TOT_INS   (UINT64_C(1) << HPX_TOT_INS)
 #define HPX_PROF_INT_INS   (UINT64_C(1) << HPX_INT_INS)
@@ -208,8 +220,11 @@ typedef enum {
 
 static const char *const HPX_COUNTER_TO_STRING[] = {
   "L1_TCM",
+  "L1_TCA",
   "L2_TCM",
+  "L2_TCA",
   "L3_TCM",
+  "L3_TCA",
   "TLB_TL",
   "TOT_INS",
   "INT_INS",
@@ -245,7 +260,8 @@ static const char* const HPX_WAITON_TO_STRING[] = {
 /// The HPX configuration type.
 ///
 /// This configuration is used to control some of the runtime
-/// parameters for the HPX system.
+/// parameters for the HPX system.  The body of the struct is 
+/// defined in options.def, and not here in config.h.
 typedef struct config {
 #define LIBHPX_OPT(group, id, init, ctype) ctype group##id;
 # include "options.def"

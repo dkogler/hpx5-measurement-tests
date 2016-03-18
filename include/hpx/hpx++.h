@@ -26,12 +26,14 @@
 #include <stdint.h>
 #include <hpx/hpx.h>
 #include <hpx/cxx/action.h>
+#include <hpx/cxx/ccall.h>
 #include <hpx/cxx/errors.h>
 #include <hpx/cxx/gas.h>
 #include <hpx/cxx/global_ptr.h>
 #include <hpx/cxx/lco.h>
 #include <hpx/cxx/malloc.h>
 #include <hpx/cxx/par_for.h>
+#include <hpx/cxx/process.h>
 #include <hpx/cxx/runtime.h>
 #include <hpx/cxx/string.h>
 #include <hpx/cxx/system.h>

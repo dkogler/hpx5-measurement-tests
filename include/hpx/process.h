@@ -47,8 +47,8 @@ hpx_addr_t hpx_process_new(hpx_addr_t termination) HPX_PUBLIC;
 int    _hpx_process_call(hpx_addr_t process, hpx_addr_t addr, hpx_action_t action,
                          hpx_addr_t result, int nargs, ...) HPX_PUBLIC;
 #define hpx_process_call(process, addr, action, result, ...)                \
-  _hpx_process_call(process, addr, action, result, __HPX_NARGS(__VA_ARGS__),\
-                    __VA_ARGS__)
+  _hpx_process_call(process, addr, action, result, __HPX_NARGS(__VA_ARGS__) \
+                    , ##__VA_ARGS__)
 
 /// Delete a specified process
 ///
@@ -188,6 +188,17 @@ void hpx_process_collective_allreduce_delete(hpx_addr_t allreduce)
 int32_t hpx_process_collective_allreduce_subscribe(hpx_addr_t allreduce,
                                                    hpx_action_t c_action,
                                                    hpx_addr_t c_target)
+  HPX_PUBLIC;
+
+/// Finalize subscription from an allreduce.
+///
+/// This notifies all the participant groups about the current active 
+/// group and its properties in preparation for collective call ahead
+///
+/// @param    allreduce The allreduce to finalize from.
+///
+int hpx_process_collective_allreduce_subscribe_finalize(hpx_addr_t allreduce)
+
   HPX_PUBLIC;
 
 /// Unsubscribe from an allreduce.

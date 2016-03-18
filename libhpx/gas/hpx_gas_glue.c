@@ -15,13 +15,18 @@
 # include "config.h"
 #endif
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include <hpx/hpx.h>
 #include <libhpx/action.h>
 #include <libhpx/debug.h>
 #include <libhpx/gas.h>
+#include <libhpx/gpa.h>
 #include <libhpx/locality.h>
+#include <libhpx/rebalancer.h>
 #include <libhpx/worker.h>
+
+const uint64_t HPX_GAS_BLOCK_BYTES_MAX = UINT64_C(1) << GPA_MAX_LG_BSIZE;
 
 hpx_addr_t HPX_HERE = 0;
 
@@ -258,6 +263,9 @@ static int _hpx_gas_free_handler(void) {
 LIBHPX_ACTION(HPX_DEFAULT, 0, hpx_gas_free_action, _hpx_gas_free_handler);
 
 void hpx_gas_move(hpx_addr_t src, hpx_addr_t dst, hpx_addr_t lco) {
+  if (src == HPX_NULL || dst == HPX_NULL) {
+    return;
+  }
   dbg_assert(here && here->gas);
   gas_t *gas = here->gas;
   dbg_assert(gas->move);
@@ -368,4 +376,32 @@ void hpx_gas_calloc_local_at_async(size_t n, uint32_t bsize, uint32_t boundary,
   dbg_check( hpx_call(loc, hpx_gas_calloc_local_at_action, lco, &n, &bsize,
                       &boundary, &attr),
              "Failed async call during allocation\n");
+}
+
+static HPX_ACTION_DECL(_set_attr_action);
+void hpx_gas_set_attr(hpx_addr_t addr, uint32_t attr) {
+  if (attr != HPX_GAS_ATTR_NONE &&
+      attr != HPX_GAS_ATTR_RO   &&
+      attr != HPX_GAS_ATTR_LB) {
+    log_dflt("invalid attribute %d for addr %"PRIu64".\n",
+             attr, addr);
+    return;
+  }
+  dbg_assert(here && here->gas);
+  gas_t *gas = here->gas;
+  if (gas->set_attr) {
+    if (!hpx_gas_try_pin(addr, NULL)) {
+      int e = hpx_call_sync(addr, _set_attr_action, NULL, 0, &addr, &attr);
+      dbg_check(e, "Could not forward hpx_gas_set_attr\n");
+      return;
+    }
+    gas->set_attr(here->gas, addr, attr);
+    hpx_gas_unpin(addr);
+  }
+}
+static LIBHPX_ACTION(HPX_INTERRUPT, 0, _set_attr_action,
+                     hpx_gas_set_attr, HPX_ADDR, HPX_UINT32);
+
+void hpx_gas_rebalance(hpx_addr_t sync) {
+  rebalancer_start(sync);
 }

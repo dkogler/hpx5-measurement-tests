@@ -9,7 +9,7 @@
 
 AC_PREREQ([2.63])
 m4_define([LIBHPX_MAJOR], [2])
-m4_define([LIBHPX_MINOR], [1])
+m4_define([LIBHPX_MINOR], [2])
 m4_define([LIBHPX_PATCH], [0])
 AC_INIT([hpx-5], LIBHPX_MAJOR.LIBHPX_MINOR.LIBHPX_PATCH, [hpx@indiana.edu])
 
@@ -19,8 +19,8 @@ AC_INIT([hpx-5], LIBHPX_MAJOR.LIBHPX_MINOR.LIBHPX_PATCH, [hpx@indiana.edu])
 : ${CFLAGS="-O3 -g"}
 : ${CXXFLAGS="-O3 -g"}
 
-AC_SUBST(HPX_COPYRIGHT,["Copyright (c) 2013-2015, Trustees of Indiana University."])
-AC_COPYRIGHT([Copyright (c) 2013-2015, Trustees of Indiana University.])
+AC_SUBST(HPX_COPYRIGHT,["Copyright (c) 2013-2016, Trustees of Indiana University."])
+AC_COPYRIGHT([Copyright (c) 2013-2016, Trustees of Indiana University.])
 
 CLEANFILES="*~ .\#*"
 AC_SUBST(CLEANFILES)
@@ -158,6 +158,8 @@ HPX_CONFIG_UTHASH([contrib/uthash])
 HPX_CONFIG_VALGRIND([contrib/valgrind])
 HPX_CONFIG_LIBFFI([contrib/$libffi_contrib_dir], [libffi])
 HPX_CONFIG_AGAS
+#HPX_CONFIG_TASKSCALES([taskscales], [$have_agas_rebalancing])
+HPX_CONFIG_METIS([metis], [$have_agas_rebalancing])
 HPX_CONFIG_LIBCUCKOO([contrib/libcuckoo], [$have_agas])
 HPX_CONFIG_PERCOLATION
 HPX_CONFIG_OPENCL([opencl], [$have_percolation])
@@ -190,6 +192,9 @@ AS_IF([test "x$have_dlmalloc" == xyes -a "x$have_tbbmalloc" == xyes],
 
 AS_IF([test "x$have_network" == xyes -a "x$have_allocator" != xyes],
   [AC_MSG_ERROR(HPX requires jemalloc, tbbmalloc or dlmalloc for network operation)])
+
+AS_IF([test "x$have_agas_rebalancing" == xyes -a "x$have_agas" == xno],
+  [AC_MSG_ERROR(Automatic load-balancing requires AGAS to be enabled)])
 
 # Configure all of the automake conditionals that our build requires.
 HPX_DO_AM_CONDITIONALS

@@ -47,36 +47,35 @@ class global_ptr<void> {
   /// Default constructor.
   ///
   /// This constructs a global_ptr<void> to NULL.
-  global_ptr<void>() : _impl(HPX_NULL) {
+  global_ptr<void>() noexcept : _impl(HPX_NULL) {
   }
 
-  global_ptr<void>(std::nullptr_t) : _impl(HPX_NULL) {
+  global_ptr<void>(std::nullptr_t) noexcept : _impl(HPX_NULL) {
   }
 
   /// Construct a generic global pointer from a generic HPX address.
-  global_ptr<void>(hpx_addr_t addr) : _impl(addr) {
+  global_ptr<void>(hpx_addr_t addr) noexcept : _impl(addr) {
   }
 
   /// Construct a generic global pointer from a pointer to any other type---this
   /// serves to handle pointer casts as well.
   template <typename U>
-  global_ptr<void>(const global_ptr<U>& ptr) : _impl(ptr.get()) {
+  global_ptr<void>(const global_ptr<U>& ptr) noexcept : _impl(ptr.get()) {
   }
 
   /// Allow smart pointers to be used in (!ptr) style tests.
-  operator bool() const {
+  operator bool() const noexcept {
     return (_impl != HPX_NULL);
   }
 
   /// Support any user that wants to get the underlying HPX address.
-  hpx_addr_t get() const {
+  hpx_addr_t get() const noexcept {
     return _impl;
   }
 
  private:
-  hpx_addr_t _impl;
+  const hpx_addr_t _impl;
 };
-
 
 /// An HPX global address ptr.
 ///
@@ -87,36 +86,35 @@ class global_ptr {
   /// This helper class will allow users to use &ptr[x] to perform address
   /// arithmetic, without exposing the underlying T to manipulation.
   class reference {
-   private:
+   public:
     reference() = delete;
 
-   public:
     /// The only thing we can do with a reference is to get its global address.
-    const global_ptr<T>& operator&() const {
+    global_ptr<T> operator&() const noexcept {
       return _gp;
     }
 
-    ~reference() {
+    ~reference() noexcept {
     }
 
    private:
     /// Global pointers create references in their array index operator.
     friend class global_ptr<T>;
-    reference(const global_ptr<T>& gp) : _gp(gp) {
+    reference(const global_ptr<T>& gp) noexcept : _gp(gp) {
     }
 
-    const global_ptr<T>& _gp;
+    global_ptr<T> _gp;
   };
 
  public:
   typedef T value_type;
 
   /// The default constructor for a global_ptr initializes the pointer to null.
-  global_ptr() : _gbl_ptr(HPX_NULL), _elems_per_blk(0) {
+  global_ptr() noexcept : _gbl_ptr(HPX_NULL), _elems_per_blk(0) {
   }
 
   /// The nullptr can be implicitly converted to a global_ptr.
-  global_ptr(std::nullptr_t) : _gbl_ptr(HPX_NULL), _elems_per_blk(0) {
+  global_ptr(std::nullptr_t) noexcept : _gbl_ptr(HPX_NULL), _elems_per_blk(0) {
   }
 
   /// A global pointer can be explicitly constructed from an hpx_addr_t.
@@ -127,7 +125,8 @@ class global_ptr {
   /// difficult-to-debug errors.
   ///
   /// @param       addr The hpx_addr_t.
-  explicit global_ptr(hpx_addr_t addr) : _gbl_ptr(addr), _elems_per_blk(1) {
+  explicit global_ptr(hpx_addr_t addr) noexcept : _gbl_ptr(addr),
+                                                  _elems_per_blk(1) {
   }
 
   /// A global pointer can be constructed from an hpx_addr_t, block size pair.
@@ -139,39 +138,40 @@ class global_ptr {
   ///
   /// @param       addr The hpx_addr_t.
   /// @param          n The number of elements per block.
-  global_ptr(hpx_addr_t addr, uint32_t n) : _gbl_ptr(addr), _elems_per_blk(n) {
+  global_ptr(hpx_addr_t addr, uint32_t n) noexcept : _gbl_ptr(addr),
+                                                     _elems_per_blk(n) {
   }
 
   /// A typed global pointer can be constructed from a global_ptr<void>, as long
   /// as the user provides a block size.
-  explicit global_ptr(const global_ptr<void>& gva, uint32_t n)
+  explicit global_ptr(const global_ptr<void>& gva, uint32_t n) noexcept
     : _gbl_ptr(gva.get()), _elems_per_blk(n) {
   }
 
   /// Allow smart pointers to be used in (!ptr) style tests.
-  operator bool() const {
+  operator bool() const noexcept {
     return (_gbl_ptr != HPX_NULL);
   }
 
   /// Returns the raw hpx_addr_t that this smart pointer encapsulates.
-  hpx_addr_t get() const {
+  hpx_addr_t get() const noexcept {
     return _gbl_ptr;
   }
 
   /// Return the block size that this smart pointer encapsulates.
-  uint32_t get_block_size() const {
+  uint32_t get_block_size() const noexcept {
     return _elems_per_blk;
   }
 
   /// The array-subscript operator is an alternative to explicit pointer
   /// arithmetic.
-  reference operator[](size_t index) const {
+  reference operator[](size_t index) const noexcept {
     return reference(*this + index);
   }
 
   /// Standard pointer arithmetic returns another global pointer.
   template <typename U>
-  global_ptr<T> operator+(U n) const {
+  global_ptr<T> operator+(U n) const noexcept {
     static_assert(std::is_integral<U>::value, "integer type required");
     ptrdiff_t bytes = n * sizeof(T);
     hpx_addr_t addr = hpx_addr_add(_gbl_ptr, bytes, bsize());
@@ -180,7 +180,7 @@ class global_ptr {
 
   /// Standard self-update pointer arithmetic.
   template <typename U>
-  global_ptr<T>& operator+=(U n) const {
+  global_ptr<T>& operator+=(U n) noexcept {
     _gbl_ptr = (*this + n).get();
     return *this;
   }
@@ -190,7 +190,7 @@ class global_ptr {
   /// Pointers can only be compared between the same allocation, which implies
   /// that they will have the same block size. Without more information we can't
   /// check this constraint more carefully.
-  ptrdiff_t operator-(const global_ptr<T>& rhs) const {
+  ptrdiff_t operator-(const global_ptr<T>& rhs) const noexcept {
     assert(_elems_per_blk == rhs.get_block_size());
     int64_t bytes = hpx_addr_sub(_gbl_ptr, rhs.get(), bsize());
     assert(bytes % sizeof(T) == 0);
@@ -209,9 +209,10 @@ class global_ptr {
   ///
   /// @return           The local pointer associated with the global pointer.
   /// @throw   NotLocal If the pointer is not local.
-  T* pin() const {
+  T* pin() const noexcept(false) {
     T* lva = nullptr;
-    if (!hpx_gas_try_pin(_gbl_ptr, reinterpret_cast<void**>(&lva))) {
+    void **clva = static_cast<void**>(static_cast<void*>(&lva));
+    if (!hpx_gas_try_pin(_gbl_ptr, clva)) {
       throw NotLocal();
     }
     return lva;
@@ -221,9 +222,10 @@ class global_ptr {
   ///
   /// @param[out] local True if the pin succeeds, false otherwise.
   /// @return           The local pointer associated with the
-  T* pin(bool &local) const {
+  T* pin(bool &local) const noexcept {
     T *lva = nullptr;
-    local = hpx_gas_try_pin(_gbl_ptr, reinterpret_cast<void**>(&lva));
+    void **clva = static_cast<void**>(static_cast<void*>(&lva));
+    local = hpx_gas_try_pin(_gbl_ptr, clva);
     return lva;
   }
 
@@ -232,14 +234,14 @@ class global_ptr {
   /// The unpin() operation must match a pin() operation, but this requirement
   /// is not enforced by the runtime. A pin_guard object can help ensure that
   /// lexically-scoped use can be properly pinned and unpinned.
-  void unpin() const {
+  void unpin() const noexcept {
     hpx_gas_unpin(_gbl_ptr);
   }
 
   /// Compute the HPX block size for the pointer. The HPX block size differs
   /// from the HPX++ block size because the HPX++ block size is in terms of T,
   /// while the HPX block size is in terms of bytes.
-  size_t bsize() const {
+  size_t bsize() const noexcept {
     return _elems_per_blk * sizeof(T);
   }
 
@@ -255,99 +257,96 @@ class global_ptr {
 ///
 /// @{
 template <typename T, typename U>
-bool operator==(const global_ptr<T>& lhs, const global_ptr<U> &rhs) {
+bool operator==(const global_ptr<T>& lhs, const global_ptr<U> &rhs) noexcept {
   return ((lhs - rhs) == 0);
 }
 
 template <typename T, typename U>
-bool operator!=(const global_ptr<T>& lhs, const global_ptr<U> &rhs) {
+bool operator!=(const global_ptr<T>& lhs, const global_ptr<U> &rhs) noexcept {
   return !(lhs == rhs);
 }
 
 template <typename T, typename U>
-bool operator<(const global_ptr<T>& lhs, const global_ptr<U> &rhs) {
+bool operator<(const global_ptr<T>& lhs, const global_ptr<U> &rhs) noexcept {
   assert(lhs.get_block_size() == rhs.get_block_size());
   return ((lhs - rhs) < 0);
 }
 
 template <typename T, typename U>
-bool operator>(const global_ptr<T>& lhs, const global_ptr<U> &rhs) {
+bool operator>(const global_ptr<T>& lhs, const global_ptr<U> &rhs) noexcept {
   assert(lhs.get_block_size() == rhs.get_block_size());
   return ((lhs - rhs) > 0);
 }
 
 template <typename T, typename U>
-bool operator<=(const global_ptr<T>& lhs, const global_ptr<U> &rhs) {
+bool operator<=(const global_ptr<T>& lhs, const global_ptr<U> &rhs) noexcept {
   assert(lhs.get_block_size() == rhs.get_block_size());
   return ((lhs - rhs) <= 0);
 }
 
 template <typename T, typename U>
-bool operator>=(const global_ptr<T>& lhs, const global_ptr<U> &rhs) {
+bool operator>=(const global_ptr<T>& lhs, const global_ptr<U> &rhs) noexcept {
   assert(lhs.get_block_size() == rhs.get_block_size());
   return ((lhs - rhs) >= 0);
 }
 
 template <typename T>
-bool operator==(const global_ptr<T>& lhs, std::nullptr_t) {
+bool operator==(const global_ptr<T>& lhs, std::nullptr_t) noexcept {
   return (lhs.get() == HPX_NULL);
 }
 
 template <typename T>
-bool operator==(std::nullptr_t, const global_ptr<T>& rhs) {
+bool operator==(std::nullptr_t, const global_ptr<T>& rhs) noexcept {
   return (HPX_NULL == rhs.get());
 }
 
 template <typename T>
-bool operator!=(const global_ptr<T>& lhs, std::nullptr_t) {
+bool operator!=(const global_ptr<T>& lhs, std::nullptr_t) noexcept {
   return (lhs.get() != HPX_NULL);
 }
 
 template <typename T>
-bool operator!=(std::nullptr_t, const global_ptr<T>& rhs) {
+bool operator!=(std::nullptr_t, const global_ptr<T>& rhs) noexcept {
   return (rhs.get() != HPX_NULL);
 }
 
 template <typename T>
-bool operator<(const global_ptr<T>& lhs, std::nullptr_t) {
-  uintptr_t ptr = static_cast<uintptr_t>(lhs.get());
-  T* p = reinterpret_cast<T*>(ptr);
-  return std::less<T*>(p, nullptr);
+bool operator<(const global_ptr<T>& lhs, std::nullptr_t) noexcept {
+  return std::less<T*>(lhs.get(), nullptr);
 }
 
 template <typename T>
-bool operator<(std::nullptr_t, const global_ptr<T>& rhs) {
-  uintptr_t ptr = static_cast<uintptr_t>(rhs.get());
-  return std::less<T*>(nullptr, reinterpret_cast<T*>(ptr));
+bool operator<(std::nullptr_t, const global_ptr<T>& rhs) noexcept {
+  return std::less<T*>(nullptr, rhs.get());
 }
 
 template <typename T>
-bool operator>(const global_ptr<T>& lhs, std::nullptr_t) {
+bool operator>(const global_ptr<T>& lhs, std::nullptr_t) noexcept {
   return nullptr < lhs;
 }
 
 template <typename T>
-bool operator>(std::nullptr_t, const global_ptr<T>& rhs) {
+bool operator>(std::nullptr_t, const global_ptr<T>& rhs) noexcept {
   return rhs < nullptr;
 }
 
 template <typename T>
-bool operator<=(const global_ptr<T>& lhs, std::nullptr_t) {
+bool operator<=(const global_ptr<T>& lhs, std::nullptr_t) noexcept {
   return !(nullptr < lhs);
 }
 
 template <typename T>
-bool operator<=(std::nullptr_t, const global_ptr<T>& rhs) {
+bool operator<=(std::nullptr_t, const global_ptr<T>& rhs) noexcept {
   return !(rhs < nullptr);
 }
 
 template <typename T>
-bool operator>=(const global_ptr<T>& lhs, std::nullptr_t) {
+bool operator>=(const global_ptr<T>& lhs, std::nullptr_t) noexcept {
   return !(lhs < nullptr);
 }
 
 template <typename T>
-bool operator>=(std::nullptr_t, const global_ptr<T>& rhs) {
+bool operator>=(std::nullptr_t, const global_ptr<T>& rhs) noexcept {
   return !(nullptr < rhs);
 }
 
@@ -369,12 +368,22 @@ class pin_guard {
   pin_guard<T>& operator=(const pin_guard<T>&) = delete;
 
  public:
+  // Moving the pin guard is fine.
+  constexpr pin_guard(pin_guard<T>&&) = default;
+  pin_guard<T>& operator=(pin_guard<T>&&) = default;
+
   /// Construct a pin_guard from a global address.
   ///
   /// @param        gva The address we're trying to pin.
-  /// @throw   NotLocal If the @p gva is not local.
-  explicit pin_guard(const global_ptr<T>& gva)
-    : _gva(gva), _local(true), _lva(gva.pin()) {
+  explicit pin_guard(const global_ptr<T>& gva) noexcept
+    : _gva(gva), _local(false), _lva(gva.pin(_local)) {
+  }
+
+  /// Construct a pin_guard from a C-API global address.
+  ///
+  /// @param        gva The global address.
+  explicit pin_guard(hpx_addr_t gva) noexcept
+    : _gva(gva), _local(false), _lva(_gva.pin(_local)) {
   }
 
   /// This version of the pin_guard constructor will return the success or
@@ -383,37 +392,68 @@ class pin_guard {
   ///
   /// @param        gva The address we're trying to pin.
   /// @param[out] local A flag indication if the @p gva was local.
-  pin_guard(const global_ptr<T>& gva, bool &local)
-    : _gva(gva), _local(true), _lva(gva.pin(_local)) {
+  pin_guard(const global_ptr<T>& gva, bool &local) noexcept
+    : _gva(gva), _local(false), _lva(_gva.pin(_local)) {
     local = _local;
+  }
+
+  /// This version of the pin_guard constructor can be used with traditional
+  /// hpx_addr_t, and will return the local address through the @p out
+  /// parameter.
+  ///
+  /// @param        gva The C-API global address.
+  /// @param[out]   lva The local virtual address of the pinned address.
+  pin_guard(hpx_addr_t gva, T*& lva) noexcept
+    : _gva(gva), _local(false), _lva(_gva.pin(_local)) {
+    lva = _lva;
   }
 
   /// The pin_guard destructor.
   ///
   /// The pin_guard will unpin the underlying gva if it was successfully pinned
   /// during construction.
-  ~pin_guard() {
+  ~pin_guard() noexcept {
     if (_local) {
       _gva.unpin();
     }
   }
 
+  /// Check for success.
+  operator bool() const noexcept {
+    return _local;
+  }
+
   /// Access the underlying local memory.
-  T* get() const {
+  T* get() const noexcept {
     assert(_local);
     return _lva;
   }
 
-  /// Access the underlying local memory.
-  operator T*() const {
-    return get();
-  }
-
  private:
-  const global_ptr<T>& _gva;
-  T*                   _lva;
-  bool               _local;
+  const global_ptr<T> _gva;
+  bool              _local;
+  T* const            _lva;
 }; // template pin_guard
+
+template <typename T>
+pin_guard<T> scoped_pin(const global_ptr<T> gva) noexcept(false) {
+  return pin_guard<T>(gva);
+}
+
+template <typename T>
+pin_guard<T> scoped_pin(const global_ptr<T> gva, bool& local) noexcept {
+  return pin_guard<T>(gva, local);
+}
+
+template <typename T>
+pin_guard<T> scoped_pin(hpx_addr_t gva, T*& lva) noexcept {
+  return pin_guard<T>(gva, lva);
+}
+
+template <typename T>
+pin_guard<T> scoped_pin(hpx_addr_t gva) noexcept {
+  return pin_guard<T>(gva);
+}
 
 } // namespace hpx
 

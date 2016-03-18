@@ -1,4 +1,4 @@
-args "--input=options.ggo --func-name=hpx_option_parser --arg-struct-name=hpx_options_t --file-name=parser --default-optional --string-parser --conf-parser --no-help --no-version"
+args "--include-getopt --input=options.ggo --func-name=hpx_option_parser --arg-struct-name=hpx_options_t --file-name=parser --default-optional --string-parser --conf-parser --no-help --no-version"
 
 section "HPX Runtime Options"
 
@@ -26,10 +26,6 @@ option "hpx-boot" - "HPX bootstrap method to use"
 typestr="type"
 values="default","smp","mpi","pmi"
 enum optional
-
-option "hpx-coalescing-buffersize" - "Coalescing buffer size"
-typestr="Integer"
-long optional
 
 option "hpx-transport" - "type of transport to use"
 typestr="type"
@@ -123,7 +119,7 @@ section "Tracing"
 
 option "hpx-trace-classes" - "set the event classes to trace"
 typestr="class"
-values="parcel","pwc","sched","lco","process","memory","schedtimes","all"
+values="parcel","pwc","sched","lco","process","memory","schedtimes","bookend","gas","all"
 enum optional multiple
 
 option "hpx-trace-filesize" - "set the size of each trace file"
@@ -134,7 +130,7 @@ section "Profiling"
 
 option "hpx-prof-counters" - "set which HW counters to use for profiling"
 typestr="counters"
-values="L1_TCM","L2_TCM","L3_TCM","TLB_TL","TOT_INS","INT_INS","FP_INS","LD_INS","SR_INS","BR_INS","TOT_CYC","all"
+values="L1_TCM","L1_TCA","L2_TCM","L2_TCA","L3_TCM","L3_TCA","TLB_TL","TOT_INS","INT_INS","FP_INS","LD_INS","SR_INS","BR_INS","TOT_CYC","all"
 enum optional multiple
 
 option "hpx-prof-detailed" - "dump all individual measurements to file in addition to summaries"
@@ -163,6 +159,11 @@ long optional
 option "hpx-pwc-parceleagerlimit" - "set the largest eager parcel size (header inclusive)"
 typestr="bytes"
 long optional
+
+section "Collectives Options"
+
+option "hpx-coll-network" - "set collective implementation to network based version (override parcel collectives)"
+flag off
 
 section "Photon Transport Options"
 
@@ -206,6 +207,10 @@ option "hpx-photon-ledgersize" - "set number of ledger entries"
 typestr="integer"
 int optional
 
+option "hpx-photon-pwcbufsize" - "set size of pwc buffers"
+typestr="bytes"
+int optional
+
 option "hpx-photon-eagerbufsize" - "set size of eager buffers"
 typestr="bytes"
 int optional
@@ -235,3 +240,11 @@ section "Optimization"
 option "hpx-opt-smp" - "optimize for SMP execution"
 typestr="0 off"
 int optional argoptional
+
+option "hpx-parcel-compression" - "enable parcel compression"
+flag off
+
+option "hpx-coalescing-buffersize" - "set coalescing buffer size"
+typestr="Integer"
+long optional
+

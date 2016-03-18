@@ -93,6 +93,7 @@ static int _test_handler(void) {
     hpx_call(block, _subscribe, and, &allreduce);
   }
   hpx_lco_wait_reset(and);
+  hpx_process_collective_allreduce_subscribe_finalize(allreduce);
 
   hpx_addr_t reduce = hpx_lco_reduce_new(HPX_LOCALITIES, sizeof(int), _init,
                                          _sum);
@@ -109,6 +110,7 @@ static int _test_handler(void) {
     int leaves = HPX_LOCALITIES * N;
     int total = (N * (N - 1) / 2) * HPX_LOCALITIES;
     int expected = leaves * total;
+    printf("expected = %d  result = %d  i = [%d] \n", expected, result, i);
     test_assert(result == expected);
   }
   hpx_lco_delete_sync(reduce);

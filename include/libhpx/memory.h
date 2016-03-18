@@ -21,6 +21,8 @@
 /// allocate. In addition to standard local memory, we can allocate network
 /// registered memory, global memory, and global cyclic memory.
 
+#include <libhpx/events.h>
+
 enum {
   AS_REGISTERED = 0,
   AS_GLOBAL,
@@ -190,121 +192,87 @@ void as_free(int id, void *ptr);
 # error No gas allocator configured
 #endif
 
-#ifdef ENABLE_INSTRUMENTATION
-#include <libhpx/instrumentation.h>
-static inline void TRACE_REGISTERED_MALLOC(void *ptr, size_t n, size_t align) {
-  static const int type = HPX_INST_CLASS_MEMORY;
-  static const int id = HPX_INST_EVENT_MEMORY_REGISTERED_ALLOC;
-  inst_trace(type, id, ptr, n, align);
-}
 
-static inline void TRACE_REGISTERED_FREE(void *ptr) {
-  static const int type = HPX_INST_CLASS_MEMORY;
-  static const int id = HPX_INST_EVENT_MEMORY_REGISTERED_FREE;
-  inst_trace(type, id, ptr);
-}
-
-static inline void TRACE_GLOBAL_MALLOC(void *ptr, size_t n, size_t align) {
-  static const int type = HPX_INST_CLASS_MEMORY;
-  static const int id = HPX_INST_EVENT_MEMORY_GLOBAL_ALLOC;
-  inst_trace(type, id, ptr, n, align);
-}
-
-static inline void TRACE_GLOBAL_FREE(void *ptr) {
-  static const int type = HPX_INST_CLASS_MEMORY;
-  static const int id = HPX_INST_EVENT_MEMORY_GLOBAL_FREE;
-  inst_trace(type, id, ptr);
-}
-
-static inline void TRACE_CYCLIC_MALLOC(void *ptr, size_t n, size_t align) {
-  static const int type = HPX_INST_CLASS_MEMORY;
-  static const int id = HPX_INST_EVENT_MEMORY_CYCLIC_ALLOC;
-  inst_trace(type, id, ptr, n, align);
-}
-
-static inline void TRACE_CYCLIC_FREE(void *ptr) {
-  static const int type = HPX_INST_CLASS_MEMORY;
-  static const int id = HPX_INST_EVENT_MEMORY_CYCLIC_FREE;
-  inst_trace(type, id, ptr);
-}
-#else
-# define TRACE_MALLOC(ptr, n, align)
-# define TRACE_FREE(ptr)
-# define TRACE_REGISTERED_MALLOC(ptr, n, align)
-# define TRACE_REGISTERED_FREE(ptr)
-# define TRACE_GLOBAL_MALLOC(ptr, n, align)
-# define TRACE_GLOBAL_FREE(ptr)
-# define TRACE_CYCLIC_MALLOC(ptr, n, align)
-# define TRACE_CYCLIC_FREE(ptr)
-#endif
 
 static inline void *registered_malloc(size_t bytes) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_malloc(AS_REGISTERED, bytes);
-  TRACE_REGISTERED_MALLOC(ptr, bytes, 0);
+  EVENT_MEMORY_REGISTERED_ALLOC(ptr, bytes, 0);
   return ptr;
 }
 
 static inline void *registered_calloc(size_t nmemb, size_t bytes) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_calloc(AS_REGISTERED, nmemb, bytes);
-  TRACE_REGISTERED_MALLOC(ptr, nmemb * bytes, 0);
+  EVENT_MEMORY_REGISTERED_ALLOC(ptr, nmemb * bytes, 0);
   return ptr;
 }
 
 static inline void *registered_memalign(size_t boundary, size_t size) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_memalign(AS_REGISTERED, boundary, size);
-  TRACE_REGISTERED_MALLOC(ptr, size, boundary);
+  EVENT_MEMORY_REGISTERED_ALLOC(ptr, size, boundary);
   return ptr;
 }
 
 static inline void registered_free(void *ptr)  {
-  TRACE_REGISTERED_FREE(ptr);
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   as_free(AS_REGISTERED, ptr);
+  EVENT_MEMORY_REGISTERED_FREE(ptr);
 }
 
 static inline void *global_malloc(size_t bytes) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_malloc(AS_GLOBAL, bytes);
-  TRACE_GLOBAL_MALLOC(ptr, bytes, 0);
+  EVENT_MEMORY_GLOBAL_ALLOC(ptr, bytes, 0);
   return ptr;
 }
 
 static inline void *global_calloc(size_t nmemb, size_t bytes) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_calloc(AS_GLOBAL, nmemb, bytes);
-  TRACE_GLOBAL_MALLOC(ptr, nmemb * bytes, 0);
+  EVENT_MEMORY_GLOBAL_ALLOC(ptr, nmemb * bytes, 0);
   return ptr;
 }
 
 static inline void *global_memalign(size_t boundary, size_t size) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_memalign(AS_GLOBAL, boundary, size);
-  TRACE_GLOBAL_MALLOC(ptr, size, boundary);
+  EVENT_MEMORY_GLOBAL_ALLOC(ptr, size, boundary);
   return ptr;
 }
 
 static inline void global_free(void *ptr)  {
-  TRACE_GLOBAL_FREE(ptr);
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   as_free(AS_GLOBAL, ptr);
+  EVENT_MEMORY_GLOBAL_FREE(ptr);
 }
 
 static inline void *cyclic_malloc(size_t bytes) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_malloc(AS_CYCLIC, bytes);
-  TRACE_CYCLIC_MALLOC(ptr, bytes, 0);
+  EVENT_MEMORY_CYCLIC_ALLOC(ptr, bytes, 0);
   return ptr;
 }
 
 static inline void *cyclic_calloc(size_t nmemb, size_t bytes) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_calloc(AS_CYCLIC, nmemb, bytes);
-  TRACE_CYCLIC_MALLOC(ptr, nmemb * bytes, 0);
+  EVENT_MEMORY_CYCLIC_ALLOC(ptr, nmemb * bytes, 0);
   return ptr;
 }
 
 static inline void *cyclic_memalign(size_t boundary, size_t size) {
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   void *ptr = as_memalign(AS_CYCLIC, boundary, size);
-  TRACE_CYCLIC_MALLOC(ptr, size, boundary);
+  EVENT_MEMORY_CYCLIC_ALLOC(ptr, size, boundary);
   return ptr;
 }
 
 static inline void cyclic_free(void *ptr)  {
-  TRACE_CYCLIC_FREE(ptr);
+  EVENT_MEMORY_ENTER_ALLOC_FREE();
   as_free(AS_CYCLIC, ptr);
+  EVENT_MEMORY_CYCLIC_FREE(ptr);
 }
 
 #endif // LIBHPX_MEMORY_H

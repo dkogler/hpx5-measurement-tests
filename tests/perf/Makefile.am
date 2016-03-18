@@ -11,9 +11,7 @@ TESTS = gas_alloc           \
         lco_future          \
         collbench           \
         parbench            \
-        my_thread_create       \
-        my_thread_switch       \
-        my_gas_local
+        thread_switch
 
 if ENABLE_LENGTHY_TESTS
 TESTS += lco_and sendrecv mem_alloc
@@ -30,9 +28,7 @@ lco_future_SOURCES              = lco_future.c
 sendrecv_SOURCES                = sendrecv.c
 collbench_SOURCES               = collbench.c
 parbench_SOURCES                = parbench.c
-my_thread_create_SOURCES           = my_thread_create.c
-my_thread_switch_SOURCES           = my_thread_switch.c
-my_gas_local_SOURCES           = my_gas_local.c
+thread_switch_SOURCES           = thread_switch.c
 
 gas_alloc_DEPENDENCIES          = $(HPX_APPS_DEPS)
 mem_alloc_DEPENDENCIES          = $(HPX_APPS_DEPS)
@@ -43,6 +39,4 @@ lco_future_DEPENDENCIES         = $(HPX_APPS_DEPS)
 sendrecv_DEPENDENCIES           = $(HPX_APPS_DEPS)
 collbench_DEPENDENCIES          = $(HPX_APPS_DEPS)
 parbench_DEPENDENCIES           = $(HPX_APPS_DEPS)
-my_thread_create_DEPENDENCIES      = $(HPX_APPS_DEPS)
-my_thread_switch_DEPENDENCIES      = $(HPX_APPS_DEPS)
-my_gas_local_DEPENDENCIES      = $(HPX_APPS_DEPS)
+thread_switch_DEPENDENCIES      = $(HPX_APPS_DEPS)

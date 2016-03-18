@@ -184,6 +184,7 @@ static int _and_release(lco_t *lco, void *out) {
 }
 
 static const lco_class_t _and_vtable = {
+  .type        = LCO_AND,
   .on_fini     = _and_fini,
   .on_error    = _and_error,
   .on_set      = _and_set,
@@ -195,6 +196,10 @@ static const lco_class_t _and_vtable = {
   .on_reset    = _and_reset,
   .on_size     = _and_size
 };
+
+static void HPX_CONSTRUCTOR _register_vtable(void) {
+  lco_vtables[LCO_AND] = &_and_vtable;
+}
 
 static int _and_init_handler(_and_t *and, int64_t count) {
   dbg_assert(count >= 0);
@@ -218,7 +223,7 @@ static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _and_init, _and_init_handler,
 /// Allocate an and LCO. This is synchronous.
 hpx_addr_t hpx_lco_and_new(int64_t limit) {
   _and_t *and = NULL;
-  hpx_addr_t gva = hpx_gas_alloc_local(1, sizeof(*and), 0);
+  hpx_addr_t gva = lco_alloc_local(1, sizeof(*and), 0);
 
   if (!hpx_gas_try_pin(gva, (void**)&and)) {
     int e = hpx_call_sync(gva, _and_init, NULL, 0, &limit);
@@ -245,21 +250,21 @@ void hpx_lco_and_set_num(hpx_addr_t and, int sum, hpx_addr_t rsync) {
   hpx_lco_delete(lsync, HPX_NULL);
 }
 
-static int _block_local_init_handler(_and_t *ands, uint32_t n, int64_t limit) {
+static int _block_init_handler(_and_t *ands, uint32_t n, int64_t limit) {
   for (int i = 0; i < n; ++i) {
     _and_init_handler(&ands[i], limit);
   }
   return HPX_SUCCESS;
 }
-static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _block_local_init,
-                     _block_local_init_handler,
+static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _block_init,
+                     _block_init_handler,
                      HPX_POINTER, HPX_UINT32, HPX_SINT64);
 
 hpx_addr_t hpx_lco_and_local_array_new(int n, int arg) {
   uint32_t lco_bytes = sizeof(_and_t);
   dbg_assert(lco_bytes < (UINT64_C(1) << GPA_MAX_LG_BSIZE) / n);
-  hpx_addr_t base = hpx_gas_alloc_local(n, lco_bytes, 0);
-  int e = hpx_call_sync(base, _block_local_init, NULL, 0, &n, &arg);
+  hpx_addr_t base = lco_alloc_local(n, lco_bytes, 0);
+  int e = hpx_call_sync(base, _block_init, NULL, 0, &n, &arg);
   dbg_check(e, "call of _block_init_action failed\n");
   return base;
 }

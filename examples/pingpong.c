@@ -113,6 +113,7 @@ int main(int argc, char *argv[]) {
   double elapsed = (double)hpx_time_elapsed_ms(start);
   double latency = elapsed / (args.id * 2);
   printf("average oneway latency:   %f ms\n", latency);
+  hpx_finalize(); 
   return e;
 }
 

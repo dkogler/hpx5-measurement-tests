@@ -460,13 +460,14 @@ hpx_addr_t hpx_lco_reduce_local_array_new(int n, int inputs, size_t size,
   HPX_PUBLIC;
 
 
-/// Allocate an array of allgather LCO local to the calling locality.
+/// Allocate an array of gather LCO local to the calling locality.
 /// @param          n The (total) number of lcos to allocate
-/// @param     inputs Number of inputs to the allgather
-/// @param       size The size of the value for allgather LCO
+/// @param     inputs Number of inputs to the gather
+/// @param       size The size of the value for gather LCO
 ///
 /// @returns the global address of the allocated array lco.
-hpx_addr_t hpx_lco_allgather_local_array_new(int n, size_t inputs, size_t size)
+hpx_addr_t hpx_lco_gather_local_array_new(int n, size_t inputs, size_t outputs,
+                                          size_t size)
   HPX_PUBLIC;
 
 /// Allocate an array of allreduce LCO local to the calling locality.
@@ -663,29 +664,30 @@ hpx_status_t hpx_lco_allreduce_join_sync(hpx_addr_t allreduce, int id,
                                          void *out)
   HPX_PUBLIC;
 
-/// Set an allgather.
+/// Set a gather LCO.
 ///
-/// The allgather LCO hpx_lco_set operation does not work correctly, because
+/// The gather LCO hpx_lco_set operation does not work correctly, because
 /// there is no input variable. Use this setid operation instead of set.
 ///
-/// @param allgather The allgather we're setting.
+/// @param gather The gather we're setting.
 /// @param id        The ID of our rank.
 /// @param size      The size of the input @p value.
 /// @param value     A pointer to @p size bytes to set with.
 /// @param lsync     An LCO to test for local completion.
 /// @param rsync     An LCO to test for remote completion.
-hpx_status_t hpx_lco_allgather_setid(hpx_addr_t allgather, unsigned id,
-                                     int size, const void *value,
-                                     hpx_addr_t lsync, hpx_addr_t rsync)
+hpx_status_t hpx_lco_gather_setid(hpx_addr_t gather, unsigned id,
+                                  int size, const void *value,
+                                  hpx_addr_t lsync, hpx_addr_t rsync)
   HPX_PUBLIC;
 
-/// Allocate an allgather.
+/// Allocate a gather LCO.
 ///
-/// This allocates an allgather LCO with enough space for @p inputs of @p size.
+/// This allocates an gather LCO with enough space for @p inputs of @p size.
 ///
-/// @param inputs The number of participants in the allgather.
-/// @param size   The size of the value type that we're gathering.
-hpx_addr_t hpx_lco_allgather_new(size_t inputs, size_t size)
+/// @param  inputs The number of writers in the gather.
+/// @param outputs The number of readers in the gather.
+/// @param    size The size of the value type that we're gathering.
+hpx_addr_t hpx_lco_gather_new(size_t inputs, size_t outputs, size_t size)
   HPX_PUBLIC;
 
 /// Set an alltoall.

@@ -15,7 +15,12 @@
 #define LIBHPX_LCO_H
 
 #include "hpx/hpx.h"
+#include <libsync/locks.h>
 
-int lco_wait(hpx_addr_t lco);
+typedef struct lco {
+  tatas_lock_t lock;
+  uint8_t      type;
+  uint8_t     state;
+} HPX_ALIGNED(16) lco_t;
 
 #endif

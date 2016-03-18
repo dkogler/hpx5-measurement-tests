@@ -55,7 +55,7 @@ static int _agas_free_block_handler(hpx_addr_t block) {
   }
 
   // This was a relocated block, free the clone and then forward the request
-  // back to the home locality.x
+  // back to the home locality.
   free(lva);
   hpx_addr_t home = HPX_THERE(gva.bits.home);
   return hpx_call_cc(home, _agas_free_block, &block);
@@ -97,7 +97,7 @@ static int _agas_free_segment_handler(hpx_addr_t base) {
   hpx_addr_t and = hpx_lco_and_new(blocks);
   for (int i = 0, e = blocks; i < e; ++i) {
     // all blocks in a segment are contiguous so we can use local add here.
-    hpx_addr_t block = agas_local_add(agas, gva, i * bsize, bsize);
+    hpx_addr_t block = agas_add_local(agas, gva, i * bsize, bsize);
     dbg_check( hpx_call(block, _agas_free_block, and, &block) );
   }
   dbg_check( hpx_lco_wait(and) );

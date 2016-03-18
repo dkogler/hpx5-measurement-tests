@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <unistd.h>
 #include <pwd.h>
 
@@ -30,12 +31,17 @@
 #include <libhpx/action.h>
 #include <libhpx/config.h>
 #include <libhpx/debug.h>
+#include <libhpx/events.h>
 #include <libhpx/instrumentation.h>
 #include <libhpx/libhpx.h>
 #include <libhpx/locality.h>
 #include <libhpx/parcel.h>
 #include <libhpx/profiling.h>
 #include "logtable.h"
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 255
+#endif
 
 /// complete path to the directory to which log files, etc. will be written
 static const char *_log_path = NULL;
@@ -45,7 +51,7 @@ static const char *_log_path = NULL;
 static bool _detailed_prof = false;
 
 /// We're keeping one log per event per locality. Here are their headers.
-static logtable_t _logs[HPX_INST_NUM_EVENTS] = {LOGTABLE_INIT};
+static logtable_t _logs[TRACE_NUM_EVENTS] = {LOGTABLE_INIT};
 
 /// Concatenate two paths. Callee must free returned char*.
 static char *_get_complete_path(const char *path, const char *filename) {
@@ -91,8 +97,8 @@ static void _log_create(int class, int id, size_t size, hpx_time_t now) {
   char filename[256];
   snprintf(filename, 256, "event.%d.%d.%d.%s.%s.log",
            class, id, hpx_get_my_rank(),
-           INST_CLASS_TO_STRING[class],
-           INST_EVENT_TO_STRING[id]);
+           HPX_TRACE_CLASS_TO_STRING[class],
+           TRACE_EVENT_TO_STRING[id]);
 
   char *file_path = _get_complete_path(_log_path, filename);
 
@@ -135,7 +141,6 @@ static const char *_get_log_path(const char *dir) {
   }
 
   struct stat sb;
-
   // if the path doesn't exist, then we make it
   if (stat(dir, &sb) != 0) {
     return _mkdir(dir);
@@ -155,7 +160,7 @@ int inst_init(config_t *cfg) {
 #ifndef ENABLE_INSTRUMENTATION
   return LIBHPX_OK;
 #endif
-  if (!config_inst_at_isset(cfg, hpx_get_my_rank())) {
+  if (!config_inst_at_isset(cfg, HPX_LOCALITY_ID)) {
     return LIBHPX_OK;
   }
 
@@ -166,9 +171,10 @@ int inst_init(config_t *cfg) {
 
   // create log files
   hpx_time_t start = hpx_time_now();
-  for (int cl = 0, e = HPX_INST_NUM_CLASSES; cl < e; ++cl) {
-    for (int id = INST_OFFSETS[cl], e = INST_OFFSETS[cl + 1]; id < e; ++id) {
-      if (inst_trace_class(cl)) {
+  int nclasses = _HPX_NELEM(HPX_TRACE_CLASS_TO_STRING);
+  for (int cl = 0, e = nclasses; cl < e; ++cl) {
+    if (inst_trace_class(1 << cl)) {
+      for (int id = TRACE_OFFSETS[cl], e = TRACE_OFFSETS[cl + 1]; id < e; ++id) {
         _log_create(cl, id, cfg->trace_filesize, start);
       }
     }
@@ -180,6 +186,7 @@ int inst_init(config_t *cfg) {
   }
   _detailed_prof = cfg->prof_detailed;
 
+  inst_trace(HPX_TRACE_BOOKEND, TRACE_EVENT_BOOKEND_BOOKEND);
   return LIBHPX_OK;
 }
 
@@ -187,11 +194,11 @@ static void _dump_hostnames(void) {
   if (_log_path == NULL) {
     return;
   }
-  char hostname[HOSTNAME_LENGTH];
-  gethostname(hostname, HOSTNAME_LENGTH);
+  char hostname[HOST_NAME_MAX];
+  gethostname(hostname, HOST_NAME_MAX);
 
   char filename[256];
-  snprintf(filename, 256, "hostname.%d", hpx_get_my_rank());
+  snprintf(filename, 256, "hostname.%d", HPX_LOCALITY_ID);
   char *filepath = _get_complete_path(_log_path, filename);
   FILE *f = fopen(filepath, "w");
   if (f == NULL) {
@@ -218,7 +225,7 @@ int inst_start(void) {
   return LIBHPX_OK;
 #endif
   // write action table for tracing
-  if (inst_trace_class(HPX_INST_CLASS_PARCEL)) {
+  if (inst_trace_class(HPX_TRACE_PARCEL)) {
     _dump_actions();
     _dump_hostnames();
   }
@@ -227,20 +234,21 @@ int inst_start(void) {
 }
 
 void inst_fini(void) {
+  inst_trace(HPX_TRACE_BOOKEND, TRACE_EVENT_BOOKEND_BOOKEND);
   prof_fini();
-  for (int i = 0, e = HPX_INST_NUM_EVENTS; i < e; ++i) {
+  for (int i = 0, e = TRACE_NUM_EVENTS; i < e; ++i) {
     logtable_fini(&_logs[i]);
   }
   free((void*)_log_path);
 }
 
 void inst_prof_dump(profile_log_t log) {
-  if (!_log_path) {
+  if (!_log_path || (log.num_events == 0 && log.num_counters == 0)) {
     return;
   }
 
   char filename[256];
-  snprintf(filename, 256, "profile.%d", hpx_get_my_rank());
+  snprintf(filename, 256, "profile.%d", HPX_LOCALITY_ID);
   char *filepath = _get_complete_path(_log_path, filename);
   FILE *f = fopen(filepath, "w");
   if (!f) {
@@ -259,11 +267,11 @@ void inst_prof_dump(profile_log_t log) {
     hpx_time_t total_time;
     prof_get_total_time(log.events[i].key, &total_time);
     total_time_ms = hpx_time_ms(total_time);
-    if(total != 0){
+    if (total != 0) {
       fprintf(f, "Total recorded user value: %f\n", total);
     }
 
-    if(total_time_ms != 0 || (log.num_counters >0 && !log.events[i].simple)){
+    if (total_time_ms != 0 || (log.num_counters > 0 && !log.events[i].simple)) {
       fprintf(f, "Statistics:\n");
       fprintf(f, "%-24s%-24s%-24s%-24s\n",
              "Type", "Average", "Minimum", "Maximum");
@@ -288,7 +296,7 @@ void inst_prof_dump(profile_log_t log) {
     prof_get_min_time(log.events[i].key, &min);
     prof_get_max_time(log.events[i].key, &max);
 
-    if(total_time_ms != 0){
+    if (total_time_ms != 0) {
       fprintf(f, "%-24s%-24.6f%-24.6f%-24.6f\n", "Time (ms)",
               hpx_time_ms(average),
               hpx_time_ms(min),
@@ -297,31 +305,31 @@ void inst_prof_dump(profile_log_t log) {
 
     if (_detailed_prof) {
       fprintf(f, "\nDUMP:\n\n%-24s", "Entry #");
-      if(!log.events[i].simple){
+      if (!log.events[i].simple) {
         for (int j = 0; j < log.num_counters; j++) {
           fprintf(f, "%-24s", HPX_COUNTER_TO_STRING[log.counters[j]]);
         }
       }
       fprintf(f, "%-24s", "Start Time (ms)");
-      if(total_time_ms != 0){
+      if (total_time_ms != 0) {
         fprintf(f, "%-24s", "CPU Time (ms)");
       }
-      if(total != 0){
+      if (total != 0) {
         fprintf(f, "%-24s", "User Value (ms)");
       }
       fprintf(f, "\n");
       for (int j = 0; j < log.events[i].num_entries; j++) {
         fprintf(f, "%-24d", j);
-        if(!log.events[i].simple){
+        if (!log.events[i].simple) {
           for (int k = 0; k < log.num_counters; k++) {
             fprintf(f, "%-24"PRIu64, log.events[i].entries[j].counter_totals[k]);
           }
         }
         fprintf(f, "%-24f", hpx_time_ms(log.events[i].entries[j].start_time));
-        if(total_time_ms != 0){
+        if (total_time_ms != 0) {
           fprintf(f, "%-24f", hpx_time_ms(log.events[i].entries[j].run_time));
         }
-        if(total != 0){
+        if (total != 0) {
           fprintf(f, "%-24f", log.events[i].entries[j].user_val);
         }
         fprintf(f, "\n");
@@ -337,23 +345,14 @@ void inst_prof_dump(profile_log_t log) {
   free(filepath);
 }
 
-void inst_vtrace(int UNUNSED, int n, int id, ...) {
-  dbg_assert_str(n < 5, "can only trace up to 4 user values\n");
+void inst_vtrace(int UNUSED, int n, int id, ...) {
   logtable_t *log = &_logs[id];
   if (!log->records) {
     return;
   }
 
-  uint64_t args[4];
   va_list vargs;
   va_start(vargs, id);
-  for (int i = 0; i < n; ++i) {
-    args[i] = va_arg(vargs, uint64_t);
-  }
+  logtable_vappend(log, n, &vargs);
   va_end(vargs);
-  for (int i = n; i < 4; ++i) {
-    args[i] = 0;
-  }
-  logtable_append(log, args[0], args[1], args[2], args[3]);
 }
-

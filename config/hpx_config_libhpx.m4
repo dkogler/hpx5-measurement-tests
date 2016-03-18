@@ -9,6 +9,10 @@ AC_DEFUN([HPX_CONFIG_LIBHPX], [
   LIBHPX_LIBS="$LIBHPX_LIBS -lstdc++"
   HPX_APPS_LIBS="$HPX_APPS_LIBS -lstdc++"
 
+  # lz4 configuration
+  LIBHPX_CPPFLAGS="$LIBHPX_CPPFLAGS -I\$(top_srcdir)/contrib/lz4/"
+  LIBHPX_LIBADD="$LIBHPX_LIBADD \$(top_builddir)/contrib/lz4/liblz4.la"
+
   # Special handling for libsync. Maybe we should make a libsync.pc?
   HPX_PC_PRIVATE_LIBS="$HPX_PC_PRIVATE_LIBS -lsync"
   

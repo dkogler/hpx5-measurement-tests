@@ -62,7 +62,7 @@ int pwc_memput(void *obj, hpx_addr_t to, const void *from, size_t size,
     }
   }
 
-  return pwc_put(obj, to, from, size, lcmd, rcmd);
+  return pwc_put(pwc_network, to, from, size, lcmd, rcmd);
 }
 /// @}
 
@@ -83,7 +83,6 @@ int pwc_memput(void *obj, hpx_addr_t to, const void *from, size_t size,
 /// the put is small.
 /// @{
 typedef struct {
-  void        *obj;
   hpx_addr_t    to;
   const void *from;
   size_t         n;
@@ -117,13 +116,12 @@ static void _pwc_memput_lsync_continuation(hpx_parcel_t *p, void *env) {
     .arg = (uintptr_t)p
   };
 
-  dbg_check( pwc_put(e->obj, e->to, e->from, e->n, lcmd, rcmd) );
+  dbg_check( pwc_put(pwc_network, e->to, e->from, e->n, lcmd, rcmd) );
 }
 
 int pwc_memput_lsync(void *obj, hpx_addr_t to, const void *from, size_t n,
                      hpx_addr_t rsync) {
   _pwc_memput_lsync_continuation_env_t env = {
-    .obj = obj,
     .to = to,
     .from = from,
     .n = n,
@@ -140,7 +138,6 @@ int pwc_memput_lsync(void *obj, hpx_addr_t to, const void *from, size_t n,
 /// use pwc() to do this, with a remote command that wakes us up.
 /// @{
 typedef struct {
-  void        *obj;
   hpx_addr_t    to;
   const void *from;
   size_t         n;
@@ -153,12 +150,11 @@ static void _pwc_memput_rsync_continuation(hpx_parcel_t *p, void *env) {
     .op  = RESUME_PARCEL_SOURCE,
     .arg = (uintptr_t)p
   };
-  dbg_check( pwc_put(e->obj, e->to, e->from, e->n, lcmd, rcmd) );
+  dbg_check( pwc_put(pwc_network, e->to, e->from, e->n, lcmd, rcmd) );
 }
 
 int pwc_memput_rsync(void *obj, hpx_addr_t to, const void *from, size_t n) {
   _pwc_memput_rsync_continuation_env_t env = {
-    .obj = obj,
     .to = to,
     .from = from,
     .n = n

@@ -5,11 +5,11 @@ DIR=$(mktemp -d "${TMPDIR:-/tmp}"/hpx.XXXXXXX)
 CONTRIB=contrib
 
 # set the array of tarball deps here
-contrib_tars=("photon-1.1.tar.bz2" "libcuckoo-b6e84f2.tar.gz"
-              "jemalloc-4.0.4.tar.bz2" "libffi-e9de7e3.tar.gz")
+contrib_tars=("photon-1.1.tar.bz2" "libcuckoo-59bfd4b.tar.gz"
+              "jemalloc-4.1.0.tar.bz2" "libffi-e9de7e3.tar.gz")
 # set matching md5sums for each tarball
-contrib_md5=("d4982ed1a51856c7f93b514eb36fbd0f" "665b2d3e65002c519bdc8dc5a86421e3"
-             "687c5cc53b9a7ab711ccd680351ff988" "c3f381d8fd2fd611b472fb4971c4f546")
+contrib_md5=("7698b85a6952ac3a99131af0b6f7d4b3" "0fef91a953a04977e8f7d58ce395a2e0"
+             "c4e53c947905a533d5899e5cc3da1f94" "c3f381d8fd2fd611b472fb4971c4f546")
 # and matching target contrib directories
 contrib_dirs=("photon" "libcuckoo" "jemalloc" "libffi")
 

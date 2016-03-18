@@ -16,6 +16,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 #include <mpi.h>
 #include <libhpx/debug.h>
 #include <libhpx/gas.h>
@@ -106,6 +107,12 @@ _mpi_clear(void *request) {
 
 static int
 _mpi_cancel(void *request, int *cancelled) {
+  MPI_Request *r = request;
+  if (*r == MPI_REQUEST_NULL) {
+    *cancelled = 1;
+    return LIBHPX_OK;
+  }
+
   if (MPI_SUCCESS != MPI_Cancel(request)) {
     return log_error("could not cancel MPI request\n");
   }
@@ -164,8 +171,72 @@ _init_mpi(void) {
                 LIBHPX_THREAD_LEVEL, level);
     }
 
+    if (LIBHPX_COMM == MPI_COMM_NULL) {
+      if (MPI_SUCCESS != MPI_Comm_dup(LIBHPX_COMM, &LIBHPX_COMM)) {
+        log_error("mpi communicator duplication failed\n");
+      }
+    }
+
     log_trans("thread_support_provided = %d\n", level);
   }
+}
+
+static void _mpi_create_comm(void *c, void *active_ranks, int num_active,
+                             int total) {
+  MPI_Comm *comm = (MPI_Comm *)c;
+  MPI_Comm active_comm;
+  MPI_Group active_group, world_group;
+  if (num_active < total) {
+    MPI_Comm_group(LIBHPX_COMM, &world_group);
+    MPI_Group_incl(world_group, num_active, active_ranks, &active_group);
+    MPI_Comm_create(LIBHPX_COMM, active_group, &active_comm);
+    *comm = active_comm;
+  } else {
+    // in this case we dont have to create an active comm group
+    // comm_group is MPI_COMM_WORKD
+    *comm = LIBHPX_COMM;
+  }
+}
+
+typedef struct {
+  hpx_monoid_op_t op;
+  int bytes;
+  char operands[];
+} val_t;
+
+/// handle for reduction operation
+/// MPI will call this function in a colelctive reduction op
+/// and then delegate to the real action
+void op_handler(void *in, void *inout, int *len, MPI_Datatype *dp) {
+  val_t *v = (val_t *)in;
+  val_t *out = (val_t *)inout;
+  v->op(out->operands, v->operands, v->bytes);
+}
+
+static void _mpi_allreduce(void *sendbuf, void *out, int count, void *datatype,
+                           void *op, void *c) {
+  MPI_Comm *comm = c;
+  hpx_monoid_op_t *hpx_handle = (hpx_monoid_op_t *)op;
+  int bytes = sizeof(val_t) + count;
+
+  // prepare operands for function
+  char *val = malloc(bytes);
+  char *result = malloc(bytes);
+  val_t *in = (val_t *)val;
+  val_t *res = (val_t *)result;
+  in->op = *hpx_handle;
+  in->bytes = count;
+  memcpy(in->operands, sendbuf, count);
+
+  MPI_Op usrOp;
+  // we assume this function is commutative for now, hence 1
+  MPI_Op_create(op_handler, 1, &usrOp);
+
+  MPI_Allreduce(val, result, bytes, MPI_BYTE, usrOp, *comm);
+  memcpy(out, res->operands, count);
+
+  free(val);
+  free(result);
 }
 
 isir_xport_t *
@@ -188,6 +259,8 @@ isir_xport_new_mpi(const config_t *cfg, gas_t *gas) {
   xport->finish         = _mpi_finish;
   xport->pin            = _mpi_pin;
   xport->unpin          = _mpi_unpin;
+  xport->create_comm    = _mpi_create_comm;
+  xport->allreduce      = _mpi_allreduce;
 
   // local = address_space_new_default(cfg);
   // registered = address_space_new_default(cfg);

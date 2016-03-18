@@ -10,13 +10,14 @@
 //  This software was created at the Indiana University Center for Research in
 //  Extreme Scale Technologies (CREST).
 // =============================================================================
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
 #include <stdlib.h>
 #include <libhpx/debug.h>
-#include <libhpx/instrumentation.h>
+#include <libhpx/events.h>
 #include <libhpx/libhpx.h>
 #include <libhpx/network.h>
 
@@ -36,9 +37,8 @@ static void _inst_delete(void *network) {
 
 static int _inst_progress(void *network, int id) {
   _inst_network_t *inst = network;
-  INST(uint64_t start_time = hpx_time_from_start_ns(hpx_time_now()));
   int r = inst->impl->progress(network, id);
-  inst_trace(HPX_INST_SCHEDTIMES, HPX_INST_SCHEDTIMES_PROGRESS, start_time);
+  EVENT_SCHEDTIMES_PROGRESS();
   return r;
 }
 
@@ -49,9 +49,8 @@ static int _inst_send(void *network, hpx_parcel_t *p) {
 
 static hpx_parcel_t *_inst_probe(void *network, int nrx) {
   _inst_network_t *inst = network;
-  INST(uint64_t start_time = hpx_time_from_start_ns(hpx_time_now()));
   hpx_parcel_t *p = inst->impl->probe(network, nrx);
-  inst_trace(HPX_INST_SCHEDTIMES, HPX_INST_SCHEDTIMES_PROBE, start_time);
+  EVENT_SCHEDTIMES_PROBE();
   return p;
 }
 

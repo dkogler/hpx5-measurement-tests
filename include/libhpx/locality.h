@@ -43,50 +43,32 @@ struct scheduler;
 struct topology;
 /// @}
 
-/// @struct locality
-/// @brief The locality object.
-///
-/// @var locality::rank The dense, 0-based rank of this locality.
-/// @var locality::ranks The total number of ranks running the current job.
-/// @var locality::epoch Keep track of the current hpx_run() epoch.
-/// @var locality::boot
-/// The bootstrap object. This provides rank and ranks, as well as some basic,
-/// IP-based networking functionality.
-/// @var locality::gas
-/// The global address space object. This provides global memory allocation and 
-/// address space functionality.
-/// @var locality::network 
-/// The network layer. This provides an active message interface targeting
-/// global addresses.
-/// @var locality::sched
-/// The lightweight thread scheduler. This provides the infrastructure required
-/// to create lightweight threads, and to deal with inter-thread data and
-/// control dependencies using LCOs.
-/// @var locality::config 
-/// The libhpx configuration object. This stores the per-locality configuration 
-/// parameters based on the user-specified runtime configuration values and/or 
-///the defaults.
-/// @var locality::actions
-/// The symmetric "action table" which stores the details of all of the actions
-/// registered at this locality.
-/// @var locality::topology
-/// The topology information.
-/// @var locality::percolation
-/// An interface for dealing with GPU backends.
-/// @var locality::mask
-/// The default signal mask.
+/// The locality object.
 typedef struct locality {
-  uint32_t             rank;
-  uint32_t            ranks;
-  uint64_t            epoch;
-  struct boot         *boot;
-  void                 *gas;
-  struct network   *network;
-  struct scheduler   *sched;
-  struct config     *config;
-  struct topology *topology;
-  void         *percolation;
-  sigset_t             mask;
+  uint32_t             rank;  //!< The dense, 0-based rank of this locality.
+  uint32_t            ranks;  //!< The total number of ranks running the current
+                              //!< job.
+  uint64_t            epoch;  //!< Keep track of the current hpx_run() epoch.
+  struct boot         *boot;  //!< The bootstrap object. This provides rank and 
+                              //!< ranks, as well as some basic, IP-based 
+                              //!< networking functionality.
+  void                 *gas;  //!< The global address space object. This 
+                              //!< provides global memory allocation and 
+                              //!< address space functionality.
+  struct network       *net;  //!< The network layer. This provides an active 
+                              //!< message interface targeting global addresses.
+  struct scheduler   *sched;  //!< The lightweight thread scheduler. This 
+                              //!< provides the infrastructure required to 
+                              //!< create lightweight threads, and to deal with 
+                              //!< inter-thread data and control dependencies 
+                              //!< using LCOs.
+  struct config     *config;  //!< The libhpx configuration object. This stores 
+                              //!< the per-locality configuration parameters 
+                              //!< based on the user-specified runtime 
+                              //!< configuration values and/or the defaults.
+  struct topology *topology;  //!< The topology information.
+  void         *percolation;  //!< An interface for dealing with GPU backends.
+  sigset_t             mask;  //!< The default signal mask.
 } locality_t;
 
 /// Inter-locality action interface.

@@ -36,8 +36,11 @@ extern profile_log_t _profile_log;
 
 static uint64_t _papi_events[] = {
   [HPX_L1_TCM]  = PAPI_L1_TCM,
+  [HPX_L1_TCA]  = PAPI_L1_TCA,
   [HPX_L2_TCM]  = PAPI_L2_TCM,
+  [HPX_L2_TCA]  = PAPI_L2_TCA,
   [HPX_L3_TCM]  = PAPI_L3_TCM,
+  [HPX_L3_TCA]  = PAPI_L3_TCA,
   [HPX_TLB_TL]  = PAPI_TLB_TL,
   [HPX_TOT_INS] = PAPI_TOT_INS,
   [HPX_INT_INS] = PAPI_INT_INS,

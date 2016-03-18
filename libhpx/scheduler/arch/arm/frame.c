@@ -24,20 +24,20 @@
 /// This must match the transfer.S asm file usage.
 ///
 /// This should be managed in an asm-specific manner.
-typedef struct {
+typedef struct HPX_PACKED {
   void     *alignment; // keep 8-byte aligned stack
 #ifdef __VFP_FP__
   void *vfp_alignment;
   void         *fpscr;
   void   *vfpregs[16];
 #endif
-  void       *regs[6]; // r6-r11
-  void            *r5; // we use this to hold the parcel that is passed to f()
-  thread_entry_t   r4; // used to hold f(), called by align_stack_trampoline
-  void           (*lr)(void); // return address
+  void       *regs[6];        //!< r6-r11
+  void            *r5;        //!< we use this to hold the parcel that is passed to f()
+  thread_entry_t   r4;        //!< used to hold f(), called by align_stack_trampoline
+  void           (*lr)(void); //!< return address
   void        *top_r4;
   void       (*top_lr)(void);
-} HPX_PACKED _frame_t;
+} _frame_t;
 
 void *transfer_frame_init(void *top, hpx_parcel_t *p, thread_entry_t f) {
   // arm wants 8 byte alignment, so we adjust the top pointer if necessary

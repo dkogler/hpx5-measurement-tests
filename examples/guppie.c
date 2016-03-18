@@ -53,13 +53,13 @@ typedef struct guppie_config {
 } guppie_config_t;
 
 static int _move = 0;
+static int _rebalance = 0;
 
 static hpx_action_t _update_table = 0;
 static hpx_action_t _init_table   = 0;
 static hpx_action_t _bitwiseor    = 0;
 static hpx_action_t _main         = 0;
 static hpx_action_t _mover        = 0;
-
 
 // table get is synchronous and returns the value
 uint64_t table_get(hpx_addr_t table, long i) {
@@ -250,7 +250,9 @@ void _main_action(guppie_config_t *cfg, size_t size)
   fflush(stdout);
 
   // Allocate main table.
-  cfg->table = hpx_gas_alloc_cyclic(cfg->tabsize, sizeof(uint64_t), sizeof(uint64_t));
+  cfg->table = hpx_gas_alloc_cyclic_attr(cfg->tabsize, sizeof(uint64_t),
+                                         sizeof(uint64_t),
+                                         _rebalance ? HPX_GAS_ATTR_LB : HPX_GAS_ATTR_NONE);
 
   // Begin timing here
   icputime = -CPUSEC();
@@ -265,8 +267,9 @@ void _main_action(guppie_config_t *cfg, size_t size)
   fflush(stdout);
 
   // Spawn a mover.
-  if (_move)
+  if (_move) {
     hpx_call(HPX_HERE, _mover, HPX_NULL, cfg, sizeof(*cfg));
+  }
 
   // Begin timing here
   icputime += CPUSEC();
@@ -282,6 +285,15 @@ void _main_action(guppie_config_t *cfg, size_t size)
 
   printf("Completed updates.\n");
   fflush(stdout);
+
+  if (_rebalance) {
+    printf("Starting automatic rebalancing.\n");
+    hpx_addr_t done = hpx_lco_future_new(0);
+    hpx_gas_rebalance(done);
+    hpx_lco_wait(done);
+    printf("Finished automatic rebalancing.\n");
+    hpx_lco_delete(done, HPX_NULL);
+  }
 
   // End timed section
   cputime += CPUSEC();
@@ -316,6 +328,7 @@ void _main_action(guppie_config_t *cfg, size_t size)
 static void _usage(FILE *stream) {
   fprintf(stream, "Usage: guppie [options] TABSIZE NUPDATES\n"
           "\t-M, enable AGAS data movement\n"
+          "\t-R, enable automatic AGAS-based rebalancing\n"
           "\t-h, show help\n");
   hpx_print_help();
   fflush(stream);
@@ -345,10 +358,13 @@ int main(int argc, char *argv[])
   }
 
   int opt = 0;
-  while ((opt = getopt(argc, argv, "Mh?")) != -1) {
+  while ((opt = getopt(argc, argv, "MRh?")) != -1) {
     switch (opt) {
      case 'M':
       _move = 1;
+      break;
+     case 'R':
+      _rebalance = 1;
       break;
      case 'h':
       _usage(stdout);

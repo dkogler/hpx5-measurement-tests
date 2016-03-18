@@ -22,7 +22,7 @@ namespace {
 using namespace std;
 
 int test_addr_arith_handler() {
-  int n1 = 10, n2 = 20;
+  int n1 = 10;
   auto ptr1 = hpx::alloc_cyclic<uint64_t>(n1, 2);
   auto ptr2 = ptr1 + 5;
 
@@ -35,7 +35,8 @@ int test_addr_arith_handler() {
 
   hpx::exit(HPX_SUCCESS);
 }
-HPX_ACTION(HPX_DEFAULT, 0, test_addr_arith, test_addr_arith_handler);
+auto test_addr_arith = hpx::make_action(test_addr_arith_handler);
+
 
 int test_pin_unpin_handler() {
   int n1 = 10;
@@ -47,18 +48,21 @@ int test_pin_unpin_handler() {
   }
   hpx::exit(HPX_SUCCESS);
 }
-HPX_ACTION(HPX_DEFAULT, 0, test_pin_unpin, test_pin_unpin_handler);
+auto test_pin_unpin = hpx::make_action(test_pin_unpin_handler);
 
 int test_subscript_handler() {
   int n1 = 10;
   auto ptr = hpx::alloc_cyclic<uint64_t>(n1, 1);
   hpx::global_ptr<uint64_t> ptr1 = &ptr[2];
-
   //   uint64_t val = ptr[2]; // not allowed
 
+  hpx::pin_guard<uint64_t> guard(ptr1);
+  uint64_t *p = guard.get();
+  p[0] = 1; // suppress warnings
+  
   hpx::exit(HPX_SUCCESS);
 }
-HPX_ACTION(HPX_DEFAULT, 0, test_subscript, test_subscript_handler);
+auto test_subscript = hpx::make_action(test_subscript_handler);
 }
 
 int main(int argc, char* argv[]) {
@@ -67,15 +71,15 @@ int main(int argc, char* argv[]) {
     return e;
   }
 
-  if (int e = hpx::run(&test_addr_arith)) {
+  if (int e = test_addr_arith.run()) {
     return e;
   }
 
-  if (int e = hpx::run(&test_pin_unpin)) {
+  if (int e = test_pin_unpin.run()) {
     return e;
   }
 
-  if (int e = hpx::run(&test_subscript)) {
+  if (int e = test_subscript.run()) {
     return e;
   }
 

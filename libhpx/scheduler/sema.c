@@ -60,6 +60,7 @@ static size_t _sema_size(lco_t *lco) {
 
 // the semaphore vtable
 static const lco_class_t _sema_vtable = {
+  .type        = LCO_SEMA,
   .on_fini     = _sema_fini,
   .on_error    = _sema_error,
   .on_set      = _sema_set,
@@ -71,6 +72,10 @@ static const lco_class_t _sema_vtable = {
   .on_reset    = _sema_reset,
   .on_size     = _sema_size
 };
+
+static void HPX_CONSTRUCTOR _register_vtable(void) {
+  lco_vtables[LCO_SEMA] = &_sema_vtable;
+}
 
 static int _sema_init_handler(_sema_t *sema, unsigned count) {
   lco_init(&sema->lco, &_sema_vtable);
@@ -85,7 +90,7 @@ static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED, _sema_init_async,
 /// Allocate a semaphore LCO.
 hpx_addr_t hpx_lco_sema_new(unsigned count) {
   _sema_t *sema = NULL;
-  hpx_addr_t gva = hpx_gas_alloc_local(1, sizeof(*sema), 0);
+  hpx_addr_t gva = lco_alloc_local(1, sizeof(*sema), 0);
 
   if (!hpx_gas_try_pin(gva, (void**)&sema)) {
     int e = hpx_call_sync(gva, _sema_init_async, NULL, 0, &count);

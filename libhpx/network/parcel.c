@@ -30,6 +30,7 @@
 #include <libhpx/action.h>
 #include <libhpx/attach.h>
 #include <libhpx/debug.h>
+#include <libhpx/events.h>
 #include <libhpx/gas.h>
 #include <libhpx/instrumentation.h>
 #include <libhpx/libhpx.h>
@@ -128,16 +129,18 @@ void parcel_launch(hpx_parcel_t *p) {
              actions[p->c_action].key,
              p->c_target);
 
-  EVENT_PARCEL_SEND(p);
+  EVENT_PARCEL_SEND(p->id, p->action, p->size, p->src, p->target);
 
   // do a local send through loopback, bypassing the network, otherwise dump the
   // parcel out to the network
-  if (hpx_gas_try_pin(p->target, NULL)) {
-    EVENT_PARCEL_RECV(p); // instrument local "receives"
+  int target = gas_owner_of(here->gas, p->target);
+  if (target == here->rank) {
+    // instrument local "receives"
+    EVENT_PARCEL_RECV(p->id, p->action, p->size, p->src, p->target);
     scheduler_spawn(p);
   }
   else {
-    int e = network_send(here->network, p);
+    int e = network_send(self->network, p);
     dbg_check(e, "failed to perform a network send\n");
   }
 }
@@ -174,11 +177,13 @@ void parcel_init(hpx_addr_t target, hpx_action_t action, hpx_addr_t c_target,
   p->credit   = 0;
 
 #ifdef ENABLE_INSTRUMENTATION
-  if (inst_trace_class(HPX_INST_CLASS_PARCEL)) {
+  if (inst_trace_class(HPX_TRACE_PARCEL)) {
     parcel_count++;
-    int rank = hpx_get_my_rank();
-    int thread = hpx_get_my_thread_id();
+    int rank   = HPX_LOCALITY_ID;
+    int thread = HPX_THREAD_ID;
     p->id = topo_offset_to_value(rank, thread, parcel_count);
+  } else {
+    p->id = 0;
   }
 #endif
 
@@ -211,7 +216,8 @@ hpx_parcel_t *parcel_new(hpx_addr_t target, hpx_action_t action,
                          hpx_pid_t pid, const void *data, size_t len) {
   hpx_parcel_t *p = parcel_alloc(len);
   parcel_init(target, action, c_target, c_action, pid, data, len, p);
-  EVENT_PARCEL_CREATE(p, self->current);
+  EVENT_PARCEL_CREATE(p->id, p->action, p->size,
+                      ((self->current) ? self->current->id : 0));
   return p;
 }
 

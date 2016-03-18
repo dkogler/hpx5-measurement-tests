@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     return e;
   }
 
-  if (int e = hpx::run(&test)) {
+  if (int e = hpx::run(test)) {
     return e;
   }
 

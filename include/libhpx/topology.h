@@ -29,47 +29,31 @@ extern "C" {
 struct config;
 /// @}
 
-/// @struct topology
-/// @brief The "physical" topology object.
-///
-/// @var topology::hwloc_topology
-/// The HWLOC topology object.
-/// @var topology::ncpus
-/// The number of physical CPUs in the system.
-/// @var topology::cpus
-/// The HWLOC object corresponding to each CPU.
-/// @var topology::ncores
-/// The number of physical cores in the system.
-/// @var topology::nnodes
-/// The number of NUMA nodes in the system.
-/// @var topology::numa_nodes
-/// The HWLOC object corresponding to each NUMA node.
-/// @var topology::cpus_per_node
-/// The number of CPUs per NUMA node
-/// @var topology::cpu_to_core
-/// The CPU to core mapping.
-/// @var topology::cpu_to_numa
-/// The CPU to NUMA node mapping.
-/// @var topology::numa_to_cpus
-/// The (reverse) NUMA node to cpus mapping.
-/// @var topology::allowed_cpus
-/// The initial CPU binding of the HPX process.
-/// @var topology::cpu_affinity_map
-/// The CPU affinity map that maintains the CPU binding for a resource
-/// (numa-node, core-id) depending on the global affinity policy.
+/// The "physical" topology object.
 typedef struct topology {
-  hwloc_topology_t  hwloc_topology;
-  int                        ncpus;
-  hwloc_obj_t                *cpus;
-  int                       ncores;
-  int                       nnodes;
-  hwloc_obj_t          *numa_nodes;
-  int                cpus_per_node;
-  int                 *cpu_to_core;
-  int                 *cpu_to_numa;
-  int               **numa_to_cpus;
-  hwloc_cpuset_t      allowed_cpus;
-  hwloc_cpuset_t *cpu_affinity_map;
+  hwloc_topology_t  hwloc_topology; //!< The HWLOC topology object.
+  int                        ncpus; //!< The number of physical CPUs in the 
+                                    //!< system.
+  
+  hwloc_obj_t                *cpus; //!< The HWLOC object corresponding to each 
+                                    //!< CPU.
+  
+  int                       ncores; //!< The number of physical cores in the 
+                                    //!< system.
+  
+  int                       nnodes; //!< The number of NUMA nodes in the system.
+  hwloc_obj_t          *numa_nodes; //!< The HWLOC object corresponding to each 
+                                    //!< NUMA node.
+  
+  int                cpus_per_node; //!< The number of CPUs per NUMA node
+  int                 *cpu_to_core; //!< The CPU to core mapping.
+  int                 *cpu_to_numa; //!< The CPU to NUMA node mapping.
+  int               **numa_to_cpus; //!< The (reverse) NUMA node to cpus mapping.
+  hwloc_cpuset_t      allowed_cpus; //!< The initial CPU - HPX process binding.
+  hwloc_cpuset_t *cpu_affinity_map; //!< The CPU affinity map that maintains the
+                                    //!< CPU binding for a resource (numa-node, 
+                                    //!< core-id) depending on the global 
+                                    //!< affinity policy.
 } topology_t;
 
 /// Allocate and initialize a new topology object.

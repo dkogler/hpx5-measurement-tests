@@ -91,7 +91,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = global_ptr$(EXEEXT) actions$(EXEEXT) \
-	futures$(EXEEXT) system$(EXEEXT)
+	futures$(EXEEXT) system$(EXEEXT) continuations$(EXEEXT)
 subdir = tests/cxx
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
@@ -125,6 +125,7 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/config/hpx_config_libcuckoo.m4 \
 	$(top_srcdir)/config/hpx_config_libffi.m4 \
 	$(top_srcdir)/config/hpx_config_libhpx.m4 \
+	$(top_srcdir)/config/hpx_config_metis.m4 \
 	$(top_srcdir)/config/hpx_config_mpi.m4 \
 	$(top_srcdir)/config/hpx_config_opencl.m4 \
 	$(top_srcdir)/config/hpx_config_papi.m4 \
@@ -167,6 +168,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_continuations_OBJECTS = continuations.$(OBJEXT)
+continuations_OBJECTS = $(am_continuations_OBJECTS)
+continuations_LDADD = $(LDADD)
 am_futures_OBJECTS = futures.$(OBJEXT)
 futures_OBJECTS = $(am_futures_OBJECTS)
 futures_LDADD = $(LDADD)
@@ -210,10 +214,10 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(actions_SOURCES) $(futures_SOURCES) $(global_ptr_SOURCES) \
-	$(system_SOURCES)
-DIST_SOURCES = $(actions_SOURCES) $(futures_SOURCES) \
-	$(global_ptr_SOURCES) $(system_SOURCES)
+SOURCES = $(actions_SOURCES) $(continuations_SOURCES) \
+	$(futures_SOURCES) $(global_ptr_SOURCES) $(system_SOURCES)
+DIST_SOURCES = $(actions_SOURCES) $(continuations_SOURCES) \
+	$(futures_SOURCES) $(global_ptr_SOURCES) $(system_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -566,6 +570,8 @@ LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+METIS_CFLAGS = @METIS_CFLAGS@
+METIS_LIBS = @METIS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPI_CFLAGS = @MPI_CFLAGS@
 MPI_LIBS = @MPI_LIBS@
@@ -686,10 +692,12 @@ global_ptr_SOURCES = global_ptr.cpp
 actions_SOURCES = actions.cpp
 futures_SOURCES = futures.cpp
 system_SOURCES = system.cpp
+continuations_SOURCES = continuations.cpp
 global_ptr_DEPENDENCIES = $(HPX_APPS_DEPS)
 actions_DEPENDENCIES = $(HPX_APPS_DEPS)
 futures_DEPENDENCIES = $(HPX_APPS_DEPS)
 system_DEPENDENCIES = $(HPX_APPS_DEPS)
+continuations_DEPENDENCIES = $(HPX_APPS_DEPS)
 all: all-am
 
 .SUFFIXES:
@@ -737,6 +745,10 @@ actions$(EXEEXT): $(actions_OBJECTS) $(actions_DEPENDENCIES) $(EXTRA_actions_DEP
 	@rm -f actions$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(actions_OBJECTS) $(actions_LDADD) $(LIBS)
 
+continuations$(EXEEXT): $(continuations_OBJECTS) $(continuations_DEPENDENCIES) $(EXTRA_continuations_DEPENDENCIES) 
+	@rm -f continuations$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(continuations_OBJECTS) $(continuations_LDADD) $(LIBS)
+
 futures$(EXEEXT): $(futures_OBJECTS) $(futures_DEPENDENCIES) $(EXTRA_futures_DEPENDENCIES) 
 	@rm -f futures$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(futures_OBJECTS) $(futures_LDADD) $(LIBS)
@@ -756,6 +768,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/actions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/continuations.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/futures.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_ptr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/system.Po@am__quote@
@@ -1007,6 +1020,13 @@ futures.log: futures$(EXEEXT)
 system.log: system$(EXEEXT)
 	@p='system$(EXEEXT)'; \
 	b='system'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+continuations.log: continuations$(EXEEXT)
+	@p='continuations$(EXEEXT)'; \
+	b='continuations'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

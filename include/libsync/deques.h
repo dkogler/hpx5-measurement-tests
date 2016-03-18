@@ -15,13 +15,14 @@
 #define LIBHPX_DEQUES_H
 
 /// @file include/libsync/deques.h
+/// A workstealing deque implementation based on the design presented in
+/// "Dynamic Circular Work-Stealing Deque" by David Chase and Yossi Lev
+/// @url http://dl.acm.org/citation.cfm?id=1073974.
 #include <stddef.h>
 #include <stdint.h>
 #include <hpx/attributes.h>
 
-/// A workstealing deque implementation based on the design presented in
-/// "Dynamic Circular Work-Stealing Deque" by David Chase and Yossi Lev
-/// @url http://dl.acm.org/citation.cfm?id=1073974.
+
 struct chase_lev_ws_deque_buffer;
 
 typedef struct chase_lev_ws_deque {

@@ -106,7 +106,6 @@ int main(int argc, char *argv[]) {
 
   // run the main action
   e = hpx_run(&thread_create, &e, sizeof(e));
-  printf("gonna finalize\n");
   hpx_finalize();
   return e;
 }

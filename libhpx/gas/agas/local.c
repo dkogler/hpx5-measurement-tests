@@ -27,7 +27,7 @@
 #include "gva.h"
 
 hpx_addr_t
-agas_local_alloc(size_t n, uint32_t bsize, uint32_t boundary, uint32_t attr) {
+agas_alloc_local(size_t n, uint32_t bsize, uint32_t boundary, uint32_t attr) {
   agas_t *agas = (agas_t*)here->gas;
   // use the local allocator to get some memory that is part of the global
   // address space
@@ -53,7 +53,7 @@ agas_local_alloc(size_t n, uint32_t bsize, uint32_t boundary, uint32_t attr) {
 }
 
 hpx_addr_t
-agas_local_calloc(size_t n, uint32_t bsize, uint32_t boundary, uint32_t attr) {
+agas_calloc_local(size_t n, uint32_t bsize, uint32_t boundary, uint32_t attr) {
   agas_t *agas = (agas_t*)here->gas;
   uint32_t align = ceil_log2_32(bsize);
   dbg_assert(align < 32);
@@ -78,7 +78,7 @@ agas_local_calloc(size_t n, uint32_t bsize, uint32_t boundary, uint32_t attr) {
 }
 
 int64_t
-agas_local_sub(const agas_t *agas, gva_t lhs, gva_t rhs, uint32_t bsize) {
+agas_sub_local(const agas_t *agas, gva_t lhs, gva_t rhs, uint32_t bsize) {
   uint64_t bits = lhs.bits.size;
   uint64_t mask = (UINT64_C(1) << bits) - 1;
   uint64_t plhs = lhs.bits.offset & mask;
@@ -89,7 +89,7 @@ agas_local_sub(const agas_t *agas, gva_t lhs, gva_t rhs, uint32_t bsize) {
 }
 
 hpx_addr_t
-agas_local_add(const agas_t *agas, gva_t gva, int64_t n, uint32_t bsize) {
+agas_add_local(const agas_t *agas, gva_t gva, int64_t n, uint32_t bsize) {
   int64_t blocks = n / bsize;
   int64_t bytes = n % bsize;
   uint64_t block_size = (UINT64_C(1) << gva.bits.size);

@@ -25,85 +25,38 @@
 
 struct config;
 
-/// @struct profile_entry_t
-/// @brief The data structure representing profiling entries
-/// @var  profile_entry_t::start_time
-/// Time of initialization
-/// @var  profile_entry_t::ref_time
-/// Time of resumption of recording session
-/// @var  profile_entry_t::run_time
-/// Total time spent in this entry
-/// @var  profile_entry_t::counter_totals
-/// Counter totals
-/// @var  profile_entry_t::user_val
-/// Stores the value of a user-defined metric
-/// @var  profile_entry_t::last_entry
-/// The previous entry being recorded
-/// @var  profile_entry_t::last_event
-/// The previous event being recorded
-/// @var  profile_entry_t::marked
-/// True if values have been recorded
-/// @var  profile_entry_t::paused
-/// True if recording has been paused
+/// The data structure representing profiling entries
 typedef struct {
-  hpx_time_t   start_time;
-  hpx_time_t     ref_time;
-  hpx_time_t     run_time;
-  int64_t *counter_totals;
-  double         user_val;
-  int          last_entry;
-  int          last_event;
-  bool             marked;
-  bool             paused;
+  hpx_time_t   start_time; //!< Time of initialization
+  hpx_time_t     ref_time; //!< Time of resumption of recording session
+  hpx_time_t     run_time; //!< Total time spent in this entry
+  int64_t *counter_totals; //!< Counter totals
+  double         user_val; //!< Stores the value of a user-defined metric
+  int          last_entry; //!< The previous entry being recorded
+  int          last_event; //!< The previous event being recorded
+  bool             marked; //!< True if values have been recorded
+  bool             paused; //!< True if recording has been paused
 } profile_entry_t;
 
-/// @struct profile_list_t
-/// @brief The data structure representing a profiled code event
-/// @var  profile_list_t::max_entries
-/// Maximum length of the list
-/// @var  profile_list_t::num_entries
-/// Number of entries in the list
-/// @var  profile_list_t::key
-/// The name of the profiled event
-/// @var  profile_list_t::entries
-/// The actual entries
-/// @var  profile_list_t::simple
-/// True if hardware counters don't apply
-/// @var  profile_list_t::eventset
-/// The eventset that will be used for this event
+/// The data structure representing a profiled code event
 typedef struct {
-  int          max_entries;
-  int          num_entries;
-  char                *key;
-  profile_entry_t *entries;
-  bool              simple;
-  int             eventset;
+  int          max_entries; //!< Maximum length of the list
+  int          num_entries; //!< Number of entries in the list
+  char                *key; //!< The name of the profiled event
+  profile_entry_t *entries; //!< The actual entries
+  bool              simple; //!< True if hardware counters don't apply
+  int             eventset; //!< The eventset that will be used for this event
 } profile_list_t;
 
-/// @struct profile_log_t
-/// @brief The data structure for storing profiling entries
-/// @var  profile_log_t::num_counters
-/// Number of counters utilized
-/// @var  profile_log_t::num_entries
-/// Number of code events profiled
-/// @var  profile_log_t::max_events
-/// Maximum number of code events profilable
-/// @var  profile_log_t::counters
-/// The ids of the counters used
-/// @var  profile_log_t::events
-/// The actual profiled events
-/// @var  profile_log_t::current_entry
-/// The current entry
-/// @var  profile_log_t::current_event
-/// The current code event
+/// The data structure for storing profiling entries
 typedef struct {
-  int           num_counters;
-  int             num_events;
-  int             max_events;
-  int              *counters;
-  profile_list_t     *events;
-  int          current_entry;
-  int          current_event;
+  int           num_counters; //!< Number of counters utilized
+  int             num_events; //!< Number of code events profiled
+  int             max_events; //!< Maximum number of code events profilable
+  int              *counters; //!< The ids of the counters used
+  profile_list_t     *events; //!< The actual profiled events
+  int          current_entry; //!< The current entry
+  int          current_event; //!< The current code event
 } profile_log_t;
 
 #define PROFILE_INIT {                      \

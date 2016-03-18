@@ -24,6 +24,7 @@
 #include <libhpx/gpa.h>
 #include <libhpx/locality.h>
 #include <libhpx/memory.h>
+#include <libhpx/rebalancer.h>
 #include <libhpx/system.h>
 #include "agas.h"
 #include "btt.h"
@@ -50,6 +51,8 @@ _agas_dealloc(void *gas) {
     bitmap_delete(agas->bitmap);
   }
 
+  rebalancer_finalize();
+
   if (here->rank == 0) {
     if (agas->cyclic_bitmap) {
       bitmap_delete(agas->cyclic_bitmap);
@@ -74,7 +77,7 @@ _agas_sub(const void *gas, hpx_addr_t lhs, hpx_addr_t rhs, uint32_t bsize) {
 
   if (!l.bits.cyclic && !r.bits.cyclic) {
     if (l.bits.home == r.bits.home) {
-      return agas_local_sub(gas, l, r, bsize);
+      return agas_sub_local(gas, l, r, bsize);
     }
   }
 
@@ -96,7 +99,7 @@ _agas_add(const void *gas, hpx_addr_t addr, int64_t bytes, uint32_t bsize) {
     return gva.addr;
   }
   else {
-    return agas_local_add(gas, gva, bytes, bsize);
+    return agas_add_local(gas, gva, bytes, bsize);
   }
 }
 
@@ -134,7 +137,15 @@ static uint32_t
 _agas_owner_of(const void *gas, hpx_addr_t addr) {
   const agas_t *agas = gas;
   gva_t gva = { .addr = addr };
-  return btt_owner_of(agas->btt, gva);
+  uint32_t owner;
+  btt_get_owner(agas->btt, gva, &owner);
+  return owner;
+}
+
+void _agas_set_attr(void *gas, hpx_addr_t addr, uint32_t attr) {
+  const agas_t *agas = gas;
+  gva_t gva = { .addr = addr };
+  btt_set_attr(agas->btt, gva, attr);
 }
 
 static int
@@ -259,7 +270,6 @@ _agas_calloc_cyclic(size_t n, uint32_t bsize, uint32_t boundary,
   return addr;
 }
 
-
 static gas_t _agas_vtable = {
   .type           = HPX_GAS_AGAS,
   .string = {
@@ -284,9 +294,10 @@ static gas_t _agas_vtable = {
   .calloc_cyclic  = _agas_calloc_cyclic,
   .alloc_blocked  = NULL,
   .calloc_blocked = NULL,
-  .alloc_local    = agas_local_alloc,
-  .calloc_local   = agas_local_calloc,
+  .alloc_local    = agas_alloc_local,
+  .calloc_local   = agas_calloc_local,
   .free           = agas_free,
+  .set_attr       = _agas_set_attr,
   .move           = agas_move,
   .owner_of       = _agas_owner_of
 };
@@ -299,6 +310,9 @@ gas_t *gas_agas_new(const config_t *config, boot_t *boot) {
   agas->vtable = _agas_vtable;
   agas->chunk_table = chunk_table_new(0);
   agas->btt = btt_new(0);
+
+  // initialize the rebalancer
+  rebalancer_init();
 
   // get the chunk size from jemalloc
   agas->chunk_size = as_bytes_per_chunk();

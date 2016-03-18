@@ -1,27 +1,5 @@
 # HPX–5
 
-This is a special checkout of HPX-5 used for taking some measurements of its
-fundamental mechanisms.  All micro-benchmarks used for making these measurements
-can be found in the tests/perf subdirectory and begin with the prefix "my".
-
-The python scripts used for plotting histograms of the measurements are also in
-this directory and will likely require changes depending on what is measured.
-Particularly, the index of the variable "w" in the main loop that is stored in 
-the "data" array will need to be changed to indicate which column of data in the
-measurements should be plotted.
-
-These scripts take only a single argument when running: the path to the file with
-the measurement data.
-
-The measurements of context switch times and thread creation times will require 
-going into libhpx/scheduler/worker.c and uncommenting a few lines of 
-instrumentation code.  These lines can easily be found by searching for "NOTE:" 
-to jump to those lines in the file.  This instrumentation should definitely be 
-OFF, however, when measuring anything else as the overhead can be quite high (at least the context switching measurements are)
-
-
-Below this line is the standard README information for HPX-5.
-
 HPX-5 is the High Performance ParalleX runtime library developed at CREST at
 Indiana University. This open source, portable, and performance-oriented
 implementation is guided by the ParalleX execution model. It provides a

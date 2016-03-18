@@ -22,12 +22,18 @@
 #include <hpx/hpx.h>
 #include <libhpx/memory.h>
 
-void *
-hpx_malloc_registered(size_t bytes) {
+void *hpx_malloc_registered(size_t bytes) {
   return as_malloc(AS_REGISTERED, bytes);
 }
 
-void
-hpx_free_registered(void *p) {
+void *hpx_calloc_registered(size_t elements, size_t bytes) {
+  return as_calloc(AS_REGISTERED, elements, bytes);
+}
+
+void *hpx_memalign_registered(size_t align, size_t bytes) {
+  return as_memalign(AS_REGISTERED, align, bytes);
+}
+
+void hpx_free_registered(void *p) {
   as_free(AS_REGISTERED, p);
 }

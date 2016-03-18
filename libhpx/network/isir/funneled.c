@@ -26,11 +26,13 @@
 #include <libhpx/locality.h>
 #include <libhpx/padding.h>
 #include <libhpx/parcel.h>
+#include <mpi.h>
 
 #include "irecv_buffer.h"
 #include "isend_buffer.h"
 #include "isir.h"
 #include "xport.h"
+#include "parcel_utils.h"
 
 typedef struct {
   network_t       vtable;
@@ -80,6 +82,56 @@ _funneled_delete(void *network) {
   free(isir);
 }
 
+static int _funneled_coll_init(void *network, coll_t **_c){
+  coll_t* c = *_c;
+  int num_active = c->group_sz;
+
+  log_net("ISIR network collective being initialized."
+		  " Total active ranks : %d \n", num_active);
+  int32_t* ranks = (int32_t*) c->data;
+  
+  if(c->comm_bytes == 0){
+    //we have not yet allocated a communicator
+    int32_t comm_bytes = sizeof(MPI_Comm);
+    *_c = realloc(c, sizeof(coll_t) + c->group_bytes + comm_bytes); 
+    c = *_c;
+    c->comm_bytes = comm_bytes;
+  }
+
+  //setup communicator
+  char *comm = c->data + c->group_bytes;
+
+  _funneled_t* isir = network;
+  isir->vtable.flush(network);
+  while (!sync_swap(&isir->progress_lock, 0, SYNC_ACQUIRE))
+    ;
+  isir->xport->create_comm(comm, ranks, num_active, here->ranks);
+  
+  sync_store(&isir->progress_lock, 1, SYNC_RELEASE);
+  return LIBHPX_OK;	
+}
+
+static int _funneled_coll_sync(void *network, hpx_parcel_t *in, void* out, coll_t* c){
+  void *sendbuf = in->buffer;
+  int count     = in->size;
+  char *comm = c->data + c->group_bytes;
+  _funneled_t* isir = network;
+  
+  //flushing network is necessary (sufficient ?) to execute any packets
+  //destined for collective operation
+  isir->vtable.flush(network);
+
+  while (!sync_swap(&isir->progress_lock, 0, SYNC_ACQUIRE))
+    ;
+  if(c->type == ALL_REDUCE) {
+    isir->xport->allreduce(sendbuf, out, count, NULL, &c->op, comm);
+  } else {
+    log_dflt("Collective type descriptor : %d is Invalid! \n", c->type);
+  }
+  sync_store(&isir->progress_lock, 1, SYNC_RELEASE);
+  return LIBHPX_OK;
+}
+
 static int
 _funneled_send(void *network, hpx_parcel_t *p) {
   _funneled_t *isir = network;
@@ -96,8 +148,8 @@ _funneled_probe(void *network, int nrx) {
 static void
 _funneled_flush(void *network) {
   _funneled_t *isir = network;
-  while (!sync_swap(&isir->progress_lock, 0, SYNC_ACQUIRE))
-    ;
+  while (!sync_swap(&isir->progress_lock, 0, SYNC_ACQUIRE)) {
+  }
   _send_all(isir);
   isend_buffer_flush(&isir->isends);
   sync_store(&isir->progress_lock, 1, SYNC_RELEASE);
@@ -167,6 +219,8 @@ network_isir_funneled_new(const config_t *cfg, struct boot *boot, gas_t *gas) {
   network->vtable.delete = _funneled_delete;
   network->vtable.progress = _funneled_progress;
   network->vtable.send = _funneled_send;
+  network->vtable.coll_sync = _funneled_coll_sync;
+  network->vtable.coll_init = _funneled_coll_init;
   network->vtable.probe = _funneled_probe;
   network->vtable.flush = _funneled_flush;
   network->vtable.register_dma = _funneled_register_dma;

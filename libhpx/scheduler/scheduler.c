@@ -30,10 +30,12 @@
 #include "libhpx/action.h"
 #include "libhpx/config.h"
 #include "libhpx/debug.h"
+#include "libhpx/gas.h"
 #include "libhpx/libhpx.h"
 #include "libhpx/locality.h"
 #include "libhpx/memory.h"
 #include "libhpx/network.h"
+#include "libhpx/rebalancer.h"
 #include "libhpx/scheduler.h"
 #include "thread.h"
 

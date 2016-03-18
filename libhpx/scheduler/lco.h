@@ -11,12 +11,12 @@
 //  Extreme Scale Technologies (CREST).
 // =============================================================================
 
-#ifndef LIBHPX_LCO_H
-#define LIBHPX_LCO_H
+#ifndef LIBHPX_SCHEDULER_LCO_H
+#define LIBHPX_SCHEDULER_LCO_H
 
 #include <inttypes.h>
 #include <hpx/attributes.h>
-#include <libsync/lockable_ptr.h>
+#include <libhpx/lco.h>
 #include "cvar.h"
 
 #define LCO_LOG_NEW(gva, lva) do {                              \
@@ -28,13 +28,18 @@
 /// asynchronously, even if the set is actually local.
 static const int HPX_LCO_SET_ASYNC = 512;
 
-typedef struct lco_class lco_class_t;
-typedef union {
-  lockable_ptr_t       lock;
-  const lco_class_t *vtable;
-  uintptr_t            bits;
-} lco_t HPX_ALIGNED(16);
-
+typedef enum {
+  LCO_ALLREDUCE = 0,
+  LCO_ALLTOALL,
+  LCO_AND,
+  LCO_FUTURE,
+  LCO_GATHER,
+  LCO_GENCOUNT,
+  LCO_REDUCE,
+  LCO_SEMA,
+  LCO_USER,
+  LCO_MAX
+} lco_type_t;
 
 /// The action used to propagate an LCO error.
 extern HPX_ACTION_DECL(lco_error);
@@ -58,7 +63,9 @@ typedef hpx_status_t (*lco_attach_t)(lco_t *lco, hpx_parcel_t *p);
 typedef void (*lco_reset_t)(lco_t *lco);
 typedef size_t (*lco_size_t)(lco_t *lco);
 
+typedef struct lco_class lco_class_t;
 struct lco_class {
+  lco_type_t            type;
   lco_fini_t         on_fini;
   lco_error_t       on_error;
   lco_set_t           on_set;
@@ -71,9 +78,7 @@ struct lco_class {
   lco_size_t         on_size;
 } HPX_ALIGNED(16);
 
-// -----------------------------------------------------------------------------
-// LCO operations merely operate on the bits of an lco vtable pointer.
-// -----------------------------------------------------------------------------
+extern const lco_class_t *lco_vtables[];
 
 /// Lock an LCO.
 ///
@@ -131,12 +136,31 @@ void lco_reset_triggered(lco_t *lco)
 uintptr_t lco_get_triggered(const lco_t *lco)
   HPX_NON_NULL(1);
 
-
+/// Set the user state to true.
+///
+/// This operation does not acquire the LCO lock---the caller must lock the
+/// pointer first if this could occur concurrently.
+///
+/// @param           lco The target LCO.
 void lco_set_user(lco_t *lco)
   HPX_NON_NULL(1);
 
+/// Get the user state of an LCO.
+///
+/// This operation does not acquire the LCO lock---the caller must lock the
+/// pointer first if this could occur concurrently.
+///
+/// @param           lco The LCO to read.
+///
+/// @returns Non-zero if the user bit is set, zero otherwise.
 uintptr_t lco_get_user(const lco_t *lco)
   HPX_NON_NULL(1);
 
+// Helper macros to allocate LCOs in the global address space
+#define lco_alloc_local(n, size, boundary)                      \
+  hpx_gas_alloc_local_attr(n, size, boundary, HPX_GAS_ATTR_LCO)
 
-#endif // LIBHPX_LCO_H
+#define lco_alloc_cyclic(n, size, boundary)                      \
+  hpx_gas_alloc_cyclic_attr(n, size, boundary, HPX_GAS_ATTR_LCO)
+
+#endif // LIBHPX_SCHEDULER_LCO_H

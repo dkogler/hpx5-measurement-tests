@@ -25,7 +25,6 @@ extern "C" {
 
 #include <hpx/hpx.h>
 #include <libhpx/instrumentation.h>
-#include <libhpx/instrumentation_events.h>
 
 struct ustack;
 
@@ -62,53 +61,27 @@ static inline uint16_t parcel_pinned(parcel_state_t state) {
   return state & PARCEL_PINNED;
 }
 
-/// @struct hpx_parcel
-/// @brief The hpx_parcel structure is what the user-level interacts with.
+/// The hpx_parcel structure is what the user-level interacts with.
 ///
-/// @var  hpx_parcel::ustack 
-/// A pointer to a stack.
-/// @var  hpx_parcel::next
-/// A pointer to the next parcel.
-/// @var  hpx_parcel::src
-/// The src rank for the parcel.
-/// @var  hpx_parcel::size
-/// The data size in bytes.
-/// @var  hpx_parcel::state
-/// The parcel's state bits.
-/// @var  hpx_parcel::offset
-/// Reserved for future use.
-/// @var  hpx_parcel::action
-/// The target action identifier.
-/// @var  hpx_parcel::c_action
-/// The continuation action identifier.
-/// @var  hpx_parcel::target
-/// The target address for parcel_send().
-/// @var  hpx_parcel::c_target
-/// The target address for the continuation.
-/// @var  hpx_parcel::id
-/// A unique identifier for parcel tracing.
-/// @var  hpx_parcel::padding
-/// Ensure consistent buffer alignment with instrumentation.
-/// @var  hpx_parcel::buffer
-/// Either an in-place payload, or a pointer.
 struct hpx_parcel {
-  struct ustack   *ustack;
-  struct hpx_parcel *next;
-  int                 src;
-  uint32_t           size;
-  parcel_state_t    state;
-  uint16_t         offset;
-  hpx_action_t     action;
-  hpx_action_t   c_action;
-  hpx_addr_t       target;
-  hpx_addr_t     c_target;
-  hpx_pid_t           pid;
-  uint64_t         credit;
+  struct ustack   *ustack;  //!< A pointer to a stack.
+  struct hpx_parcel *next;  //!< A pointer to the next parcel.
+  int                 src;  //!< The src rank for the parcel.
+  uint32_t           size;  //!< The data size in bytes.
+  parcel_state_t    state;  //!< The parcel's state bits.
+  uint16_t         offset;  //!< Reserved for future use.
+  hpx_action_t     action;  //!< The target action identifier.
+  hpx_action_t   c_action;  //!< The continuation action identifier.
+  hpx_addr_t       target;  //!< The target address for parcel_send().
+  hpx_addr_t     c_target;  //!< The target address for the continuation.
+  hpx_pid_t           pid;  //!< The process ID.
+  uint64_t         credit;  //!< Credit held by the parcel.
 #ifdef ENABLE_INSTRUMENTATION
-  uint64_t             id;
-  const uint64_t  padding;
+  uint64_t             id;  //!< A unique identifier for parcel tracing.
+  const uint64_t  padding;  //!< Ensure consistent buffer alignment with
+                            //!< instrumentation.
 #endif
-  char             buffer[];
+  char           buffer[];  //!< Either an in-place payload, or a pointer.
 };
 
 // Verify an assumption about how big the parcel structure is.
@@ -125,33 +98,6 @@ struct hpx_parcel {
       _HPX_ASSERT(sizeof(hpx_parcel_t) == HPX_CACHELINE_SIZE, parcel_size);
   #endif
 #endif
-
-/// Parcel tracing events shared across files.
-/// @{
-static inline void EVENT_PARCEL_CREATE(hpx_parcel_t *p, hpx_parcel_t *parent) {
-  static const int type = HPX_INST_CLASS_PARCEL;
-  static const int id = HPX_INST_EVENT_PARCEL_CREATE;
-  inst_trace(type, id, p->id, p->action, p->size, ((parent) ? parent->id : 0));
-}
-
-static inline void EVENT_PARCEL_SEND(hpx_parcel_t *p) {
-  static const int type = HPX_INST_CLASS_PARCEL;
-  static const int id = HPX_INST_EVENT_PARCEL_SEND;
-  inst_trace(type, id, p->id, p->action, p->size, p->target);
-}
-
-static inline void EVENT_PARCEL_RECV(hpx_parcel_t *p) {
-  static const int type = HPX_INST_CLASS_PARCEL;
-  static const int id = HPX_INST_EVENT_PARCEL_RECV;
-  inst_trace(type, id, p->id, p->action, p->size, p->src);
-}
-
-static inline void EVENT_PARCEL_RESEND(hpx_parcel_t *p) {
-  static const int type = HPX_INST_CLASS_PARCEL;
-  static const int id = HPX_INST_EVENT_PARCEL_RESEND;
-  inst_trace(type, id, p->id, p->action, p->size, p->target);
-}
-/// @}
 
 void parcel_init(hpx_addr_t target, hpx_action_t action, hpx_addr_t c_target,
                  hpx_action_t c_action, hpx_pid_t pid, const void *data,

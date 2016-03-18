@@ -23,10 +23,9 @@ void free(const global_ptr<void>& gva) {
   hpx_gas_free_sync(gva.get());
 }
 
-template <template <typename> class LCO>
-void free(const global_ptr<void>& gva, const global_ptr<LCO<void>>& rsync) {
-  static_assert(std::is_base_of<lco::Base<void>, LCO<void>>::value,
-                "rsync must be a control-only LCO");
+template <typename T>
+void free(const global_ptr<void>& gva, const global_ptr<T>& rsync) {
+  static_assert(lco::is_lco<T>::value, "rsync must be an LCO");
   hpx_gas_free(gva.get(), rsync.get());
 }
 
@@ -61,6 +60,16 @@ global_ptr<T> alloc_local(size_t n) {
   return malloc<T>(n, 1, 0, HPX_GAS_DIST_LOCAL, HPX_GAS_ATTR_NONE);
 }
 
+template <typename T, typename V>
+global_ptr<T> calloc_local(size_t n, unsigned boundary) {
+  return calloc<T>(n, 1, boundary, HPX_GAS_DIST_LOCAL, HPX_GAS_ATTR_NONE);
+}
+
+template <typename T>
+global_ptr<T> calloc_local(size_t n) {
+  return calloc<T>(n, 1, 0, HPX_GAS_DIST_LOCAL, HPX_GAS_ATTR_NONE);
+}
+
 template <typename T>
 global_ptr<T> alloc_cyclic(size_t n, unsigned block, unsigned boundary) {
   return malloc<T>(n, block, boundary, HPX_GAS_DIST_CYCLIC, HPX_GAS_ATTR_NONE);
@@ -72,14 +81,43 @@ global_ptr<T> alloc_cyclic(size_t n, unsigned block) {
 }
 
 template <typename T>
+global_ptr<T> calloc_cyclic(size_t n, unsigned block, unsigned boundary) {
+  return calloc<T>(n, block, boundary, HPX_GAS_DIST_CYCLIC, HPX_GAS_ATTR_NONE);
+}
+
+template <typename T>
+global_ptr<T> calloc_cyclic(size_t n, unsigned block) {
+  return calloc<T>(n, block, 0, HPX_GAS_DIST_CYCLIC, HPX_GAS_ATTR_NONE);
+}
+
+namespace registered {
+template <typename T>
 T* malloc(size_t bytes) {
-  return static_cast<T*>(hpx_malloc_registered(bytes));
+  return reinterpret_cast<T*>(hpx_malloc_registered(bytes));
 }
 
-void free(void* registered) {
-  hpx_free_registered(registered);
+template <typename T>
+T* memalign(size_t align, size_t bytes) {
+  return reinterpret_cast<T*>(hpx_memalign_registered(align, bytes));
 }
 
+void free(void* p) {
+  hpx_free_registered(p);
+}
+
+template <typename T>
+std::unique_ptr<T, decltype(free)*>
+malloc_unique(size_t bytes) {
+  return std::unique_ptr<T, decltype(free)*>(malloc<T>(bytes), free);
+}
+
+template <typename T>
+std::unique_ptr<T, decltype(free)*>
+memalign_unique(size_t align, size_t bytes) {
+  return std::unique_ptr<T, decltype(free)*>(memalign<T>(align, bytes), free);
+}
+
+} // namespace registered
 } // namespace hpx
 
 #endif // HPX_CXX_MALLOC_H

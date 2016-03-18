@@ -27,8 +27,7 @@ typedef union {
   uint64_t packed;
   struct {
     uint64_t   arg : 48;
-    uint64_t    op : 8;
-    uint64_t xport : 8;
+    uint64_t    op : 16;
   };
 } command_t;
 

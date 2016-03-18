@@ -143,7 +143,8 @@ static hpx_status_t _gencount_wait_gen(_gencount_t *gencnt, unsigned long gen) {
   return status;
 }
 
-static const lco_class_t gencount_vtable = {
+static const lco_class_t _gencount_vtable = {
+  .type        = LCO_GENCOUNT,
   .on_fini     = _gencount_fini,
   .on_error    = _gencount_error,
   .on_set      = _gencount_set,
@@ -156,8 +157,12 @@ static const lco_class_t gencount_vtable = {
   .on_size     = _gencount_size
 };
 
+static void HPX_CONSTRUCTOR _register_vtable(void) {
+  lco_vtables[LCO_GENCOUNT] = &_gencount_vtable;
+}
+
 static int _gencount_init_handler(_gencount_t *gencnt, unsigned long ninplace) {
-  lco_init(&gencnt->lco, &gencount_vtable);
+  lco_init(&gencnt->lco, &_gencount_vtable);
   cvar_reset(&gencnt->oflow);
   gencnt->gen = 0;
   gencnt->ninplace = ninplace;
@@ -179,7 +184,7 @@ static LIBHPX_ACTION(HPX_DEFAULT, 0, _gencount_wait_gen_proxy,
 hpx_addr_t hpx_lco_gencount_new(unsigned long ninplace) {
   _gencount_t *cnt = NULL;
   size_t bytes = sizeof(_gencount_t) + ninplace * sizeof(cvar_t);
-  hpx_addr_t gva = hpx_gas_alloc_local(1, bytes, 0);
+  hpx_addr_t gva = lco_alloc_local(1, bytes, 0);
 
   if (!hpx_gas_try_pin(gva, (void**)&cnt)) {
     int e = hpx_call_sync(gva, _gencount_init_async, NULL, 0, &ninplace);

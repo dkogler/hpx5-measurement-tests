@@ -31,7 +31,7 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 pkg_prefix="@prefix@/lib/pkgconfig"
 
-LIBS=$(PKG_CONFIG_PATH="$pkg_prefix" pkg-config --libs --static hpx)
+LIBS=$(PKG_CONFIG_PATH="$pkg_prefix:$PKG_CONFIG_PATH" pkg-config --libs --static hpx)
 
 case "$1" in
 --help | -h)

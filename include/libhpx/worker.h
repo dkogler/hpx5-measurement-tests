@@ -29,6 +29,7 @@ extern "C" {
 /// Forward declarations.
 /// @{
 struct ustack;
+struct network;
 /// @}
 
 /// Class representing a worker thread's state.
@@ -45,29 +46,30 @@ typedef struct {
 } padded_deque_t;
 
 typedef struct {
-  pthread_t          thread;                    // this worker's native thread
-  int                    id;                    // this worker's id
-  unsigned             seed;                    // my random seed
-  int            work_first;                    // this worker's mode
-  int               nstacks;                    // count of freelisted stacks
-  int               yielded;                    // used by APEX
-  int                active;                    // used by APEX scheduler throttling
-  hpx_parcel_t      *system;                    // this worker's native parcel
-  hpx_parcel_t     *current;                    // current thread
-  struct ustack     *stacks;                    // freelisted stacks
+  pthread_t          thread;              //!< this worker's native thread
+  int                    id;              //!< this worker's id
+  unsigned             seed;              //!< my random seed
+  int            work_first;              //!< this worker's mode
+  int               nstacks;              //!< count of freelisted stacks
+  int               yielded;              //!< used by APEX
+  int                active;              //!< used by APEX scheduler throttling
+  hpx_parcel_t      *system;              //!< this worker's native parcel
+  hpx_parcel_t     *current;              //!< current thread
+  struct ustack     *stacks;              //!< freelisted stacks
   PAD_TO_CACHELINE(sizeof(pthread_t) +
                    sizeof(int) * 6 +
                    sizeof(hpx_parcel_t*) * 2 +
                    sizeof(struct ustack*));
-  int               work_id;                    // which queue are we using
+  int               work_id;              //!< which queue are we using
   PAD_TO_CACHELINE(sizeof(int));
   padded_deque_t  queues[2];
-  two_lock_queue_t    inbox;                    // mail sent to me
-  libhpx_stats_t      stats;                    // per-worker statistics
-  int           last_victim;                    // last successful victim
-  int             numa_node;                    // this worker's numa node
-  void            *profiler;                    // worker maintains a
-                                                // reference to its profiler
+  two_lock_queue_t    inbox;              //!< mail sent to me                
+  libhpx_stats_t      stats;              //!< per-worker statistics          
+  int           last_victim;              //!< last successful victim         
+  int             numa_node;              //!< this worker's numa node        
+  void            *profiler;              //!< reference to the profiler      
+  void                 *bst;              //!< reference to the profiler      
+  struct network   *network;              //!< reference to the network       
 } worker_t HPX_ALIGNED(HPX_CACHELINE_SIZE);
 /// @}
 

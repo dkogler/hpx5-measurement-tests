@@ -86,7 +86,7 @@ void handle_recv_parcel(int src, command_t command) {
 #endif
   p->src = src;
   parcel_set_state(p, PARCEL_SERIALIZED | PARCEL_BLOCK_ALLOCATED);
-  EVENT_PARCEL_RECV(p);
+  EVENT_PARCEL_RECV(p->id, p->action, p->size, p->src, p->target);
   scheduler_spawn(p);
 }
 

@@ -24,7 +24,7 @@
 
 // Did we initialize MPI? If not, we don't want to finalize it.
 static bool _inited_mpi = false;
-MPI_Comm LIBHPX_COMM;
+MPI_Comm LIBHPX_COMM = MPI_COMM_NULL;
 
 static HPX_RETURNS_NON_NULL const char *_id(void) {
   return "MPI";
@@ -109,7 +109,7 @@ static boot_t _mpi_boot_class = {
 };
 
 boot_t *boot_new_mpi(void) {
-  int init;
+  int init = 0;
   if (MPI_SUCCESS != MPI_Initialized(&init)) {
     log_error("mpi initialization failed\n");
     return NULL;
@@ -121,7 +121,7 @@ boot_t *boot_new_mpi(void) {
 
   static const int LIBHPX_THREAD_LEVEL = MPI_THREAD_SERIALIZED;
 
-  int level;
+  int level = MPI_THREAD_SINGLE;
   if (MPI_SUCCESS != MPI_Init_thread(NULL, NULL, LIBHPX_THREAD_LEVEL, &level)) {
     log_error("mpi initialization failed\n");
     return NULL;

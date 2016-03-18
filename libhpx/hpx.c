@@ -68,9 +68,9 @@ static void _stop(locality_t *l) {
     l->sched = NULL;
   }
 
-  if (l->network) {
-    network_delete(l->network);
-    l->network = NULL;
+  if (l->net) {
+    network_delete(l->net);
+    l->net = NULL;
   }
 }
 
@@ -214,8 +214,8 @@ int hpx_init(int *argc, char ***argv) {
   log_dflt("HPX running %d worker threads on %d cores\n", here->config->threads,
            cores);
 
-  here->network = network_new(here->config, here->boot, here->gas);
-  if (!here->network) {
+  here->net = network_new(here->config, here->boot, here->gas);
+  if (!here->net) {
     status = log_error("failed to create network.\n");
     goto unwind1;
   }
@@ -270,7 +270,7 @@ int _hpx_run(hpx_action_t *act, int n, ...) {
 
   // We need to flush the network here, because it might have messages that are
   // required for progress.
-  here->network->flush(here->network);
+  self->network->flush(self->network);
 
   // Bump our epoch, and enforce the "collective" nature of run with a boot
   // barrier.

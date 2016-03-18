@@ -93,6 +93,26 @@ static void _pwc_release_dma(void *network, const void* base, size_t n) {
   pwc->xport->unpin(base, n);
 }
 
+static int _pwc_coll_init(void *network, coll_t **_c) {
+  return LIBHPX_OK;
+}
+
+int _pwc_coll_sync(void *network, hpx_parcel_t *in, void *out, coll_t *c) {
+  void *sendbuf = in->buffer;
+  int count = in->size;
+  char *comm = c->data + c->group_bytes;
+  pwc_network_t *pwc = network;
+
+  // flushing network is necessary (sufficient ?) to execute any packets
+  // destined for collective operation
+  pwc->vtable.flush(network);
+
+  if (c->type == ALL_REDUCE) {
+    pwc->xport->allreduce(sendbuf, out, count, NULL, &c->op, comm);
+  }
+  return LIBHPX_OK;
+}
+
 static int _pwc_send(void *network, hpx_parcel_t *p) {
   if (parcel_size(p) >= here->config->pwc_parceleagerlimit) {
     return pwc_rendezvous_send(network, p);
@@ -145,8 +165,8 @@ static const class_string_t _pwc_string_vtable = {
   .memput       = pwc_memput,
   .memput_lsync = pwc_memput_lsync,
   .memput_rsync = pwc_memput_rsync,
-  .memcpy       = NULL,
-  .memcpy_sync  = NULL
+  .memcpy       = pwc_memcpy,
+  .memcpy_sync  = pwc_memcpy_sync
 };
 
 network_t *
@@ -180,6 +200,8 @@ network_pwc_funneled_new(const config_t *cfg, boot_t *boot, gas_t *gas) {
   pwc->vtable.delete = _pwc_delete;
   pwc->vtable.progress = _pwc_progress;
   pwc->vtable.send = _pwc_send;
+  pwc->vtable.coll_init = _pwc_coll_init;
+  pwc->vtable.coll_sync = _pwc_coll_sync;
   pwc->vtable.probe = _pwc_probe;
   pwc->vtable.flush = _pwc_flush;
   pwc->vtable.register_dma = _pwc_register_dma;

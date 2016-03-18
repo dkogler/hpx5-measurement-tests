@@ -64,12 +64,15 @@ _init_photon_config(const config_t *cfg, boot_t *boot,
   pcfg->ugni.eth_dev            = cfg->photon_ethdev;
   pcfg->ugni.bte_thresh         = cfg->photon_btethresh;
   pcfg->cap.eager_buf_size      = cfg->photon_eagerbufsize;
+  pcfg->cap.pwc_buf_size        = cfg->photon_pwcbufsize;
   pcfg->cap.small_pwc_size      = cfg->photon_smallpwcsize;
   pcfg->cap.ledger_entries      = cfg->photon_ledgersize;
   pcfg->cap.max_rd              = cfg->photon_maxrd;
   pcfg->cap.default_rd          = cfg->photon_defaultrd;
   pcfg->cap.num_cq              = cfg->photon_numcq;
   pcfg->cap.use_rcq             = cfg->photon_usercq;
+  // static config relevant to HPX
+  pcfg->cap.max_cid_size        =  8;  // 64 bit completion IDs (commands)
   // static config not relevant for current HPX usage
   pcfg->forwarder.use_forwarder =  0;
   pcfg->cap.small_msg_size      = -1;  // default 4096 - not used for PWC
@@ -201,9 +204,16 @@ static command_t _chain_unpin(const void *addr, size_t n, command_t op) {
 static int _photon_cmd(int rank, command_t lcmd, command_t rcmd) {
   int flags = ((lcmd.op) ? NOP : PHOTON_REQ_PWC_NO_LCE) |
               ((rcmd.op) ? NOP : PHOTON_REQ_PWC_NO_RCE);
-
-  int e = photon_put_with_completion(rank, 0, NULL, NULL, lcmd.packed,
-                                     rcmd.packed, flags);
+  photon_cid lid = {
+    .u64 = lcmd.packed,
+    .size = 0
+  };
+  photon_cid rid = {
+    .u64 = rcmd.packed,
+    .size = 0
+  };
+  int e = photon_put_with_completion(rank, 0, NULL, NULL, lid,
+                                     rid, flags);
   if (PHOTON_OK == e) {
     return LIBHPX_OK;
   }
@@ -239,9 +249,16 @@ static int _photon_pwc(xport_op_t *op) {
     _photon_pin(op->src, op->n, &lbuf.priv);
     op->lop = _chain_unpin(op->src, op->n, op->lop);
   }
-
+  photon_cid lid = {
+    .u64 = op->lop.packed,
+    .size = 0
+  };
+  photon_cid rid = {
+    .u64 = op->rop.packed,
+    .size = 0
+  };
   int e = photon_put_with_completion(op->rank, op->n, &lbuf, &rbuf,
-                                     op->lop.packed, op->rop.packed, flags);
+                                     lid, rid, flags);
   if (PHOTON_OK == e) {
     return LIBHPX_OK;
   }
@@ -278,9 +295,16 @@ _photon_gwc(xport_op_t *op) {
   };
   dbg_assert(op->src_key);
   _photon_key_copy(&rbuf.priv, op->src_key);
-
+  photon_cid lid = {
+    .u64 = op->lop.packed,
+    .size = 0
+  };
+  photon_cid rid = {
+    .u64 = op->rop.packed,
+    .size = 0
+  };
   int e = photon_get_with_completion(op->rank, op->n, &lbuf, &rbuf,
-                                     op->lop.packed, op->rop.packed, flags);
+                                     lid, rid, flags);
   if (PHOTON_OK == e) {
     return LIBHPX_OK;
   }
@@ -290,12 +314,14 @@ _photon_gwc(xport_op_t *op) {
 
 static int
 _poll(command_t *op, int *remaining, int rank, int *src, int type) {
+  photon_cid rid;
   int flag = 0;
   int prank = (rank == XPORT_ANY_SOURCE) ? PHOTON_ANY_SOURCE : rank;
-  int e = photon_probe_completion(prank, &flag, remaining, &op->packed, src, type);
+  int e = photon_probe_completion(prank, &flag, remaining, &rid, src, NULL, type);
   if (PHOTON_OK != e) {
     dbg_error("photon probe error\n");
   }
+  op->packed = rid.u64;
   return flag;
 }
 
@@ -312,6 +338,14 @@ _photon_probe(command_t *op, int *remaining, int rank, int *src) {
 static void
 _photon_dealloc(void *photon) {
   free(photon);
+}
+
+static void _photon_create_comm(void *c, int rank, void *active_ranks,
+                                int num_active, int total) {
+}
+
+static void _photon_allreduce(void *sendbuf, void *out, int count,
+                              void *datatype, void *op, void *c) {
 }
 
 pwc_xport_t *
@@ -333,6 +367,8 @@ pwc_xport_new_photon(const config_t *cfg, boot_t *boot, gas_t *gas) {
   photon->vtable.gwc          = _photon_gwc;
   photon->vtable.test         = _photon_test;
   photon->vtable.probe        = _photon_probe;
+  photon->vtable.create_comm  = _photon_create_comm;
+  photon->vtable.allreduce    = _photon_allreduce;
 
   // initialize the registered memory allocator
   registered_allocator_init(&photon->vtable);

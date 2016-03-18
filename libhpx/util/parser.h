@@ -46,8 +46,8 @@ enum enum_hpx_thread_affinity { hpx_thread_affinity__NULL = -1, hpx_thread_affin
 enum enum_hpx_sched_policy { hpx_sched_policy__NULL = -1, hpx_sched_policy_arg_default = 0, hpx_sched_policy_arg_random, hpx_sched_policy_arg_hier };
 enum enum_hpx_log_level { hpx_log_level__NULL = -1, hpx_log_level_arg_default = 0, hpx_log_level_arg_boot, hpx_log_level_arg_sched, hpx_log_level_arg_gas, hpx_log_level_arg_lco, hpx_log_level_arg_net, hpx_log_level_arg_trans, hpx_log_level_arg_parcel, hpx_log_level_arg_action, hpx_log_level_arg_config, hpx_log_level_arg_memory, hpx_log_level_arg_coll, hpx_log_level_arg_all };
 enum enum_hpx_dbg_waitonsig { hpx_dbg_waitonsig__NULL = -1, hpx_dbg_waitonsig_arg_segv = 0, hpx_dbg_waitonsig_arg_abrt, hpx_dbg_waitonsig_arg_fpe, hpx_dbg_waitonsig_arg_ill, hpx_dbg_waitonsig_arg_bus, hpx_dbg_waitonsig_arg_iot, hpx_dbg_waitonsig_arg_sys, hpx_dbg_waitonsig_arg_trap, hpx_dbg_waitonsig_arg_all };
-enum enum_hpx_trace_classes { hpx_trace_classes__NULL = -1, hpx_trace_classes_arg_parcel = 0, hpx_trace_classes_arg_pwc, hpx_trace_classes_arg_sched, hpx_trace_classes_arg_lco, hpx_trace_classes_arg_process, hpx_trace_classes_arg_memory, hpx_trace_classes_arg_schedtimes, hpx_trace_classes_arg_all };
-enum enum_hpx_prof_counters { hpx_prof_counters__NULL = -1, hpx_prof_counters_arg_L1_TCM = 0, hpx_prof_counters_arg_L2_TCM, hpx_prof_counters_arg_L3_TCM, hpx_prof_counters_arg_TLB_TL, hpx_prof_counters_arg_TOT_INS, hpx_prof_counters_arg_INT_INS, hpx_prof_counters_arg_FP_INS, hpx_prof_counters_arg_LD_INS, hpx_prof_counters_arg_SR_INS, hpx_prof_counters_arg_BR_INS, hpx_prof_counters_arg_TOT_CYC, hpx_prof_counters_arg_all };
+enum enum_hpx_trace_classes { hpx_trace_classes__NULL = -1, hpx_trace_classes_arg_parcel = 0, hpx_trace_classes_arg_pwc, hpx_trace_classes_arg_sched, hpx_trace_classes_arg_lco, hpx_trace_classes_arg_process, hpx_trace_classes_arg_memory, hpx_trace_classes_arg_schedtimes, hpx_trace_classes_arg_bookend, hpx_trace_classes_arg_gas, hpx_trace_classes_arg_all };
+enum enum_hpx_prof_counters { hpx_prof_counters__NULL = -1, hpx_prof_counters_arg_L1_TCM = 0, hpx_prof_counters_arg_L1_TCA, hpx_prof_counters_arg_L2_TCM, hpx_prof_counters_arg_L2_TCA, hpx_prof_counters_arg_L3_TCM, hpx_prof_counters_arg_L3_TCA, hpx_prof_counters_arg_TLB_TL, hpx_prof_counters_arg_TOT_INS, hpx_prof_counters_arg_INT_INS, hpx_prof_counters_arg_FP_INS, hpx_prof_counters_arg_LD_INS, hpx_prof_counters_arg_SR_INS, hpx_prof_counters_arg_BR_INS, hpx_prof_counters_arg_TOT_CYC, hpx_prof_counters_arg_all };
 enum enum_hpx_photon_backend { hpx_photon_backend__NULL = -1, hpx_photon_backend_arg_default = 0, hpx_photon_backend_arg_verbs, hpx_photon_backend_arg_ugni, hpx_photon_backend_arg_fi };
 
 /** @brief Where the command line options are stored */
@@ -66,9 +66,6 @@ struct hpx_options_t
   enum enum_hpx_boot hpx_boot_arg;	/**< @brief HPX bootstrap method to use.  */
   char * hpx_boot_orig;	/**< @brief HPX bootstrap method to use original value given at command line.  */
   const char *hpx_boot_help; /**< @brief HPX bootstrap method to use help description.  */
-  long hpx_coalescing_buffersize_arg;	/**< @brief Coalescing buffer size.  */
-  char * hpx_coalescing_buffersize_orig;	/**< @brief Coalescing buffer size original value given at command line.  */
-  const char *hpx_coalescing_buffersize_help; /**< @brief Coalescing buffer size help description.  */
   enum enum_hpx_transport hpx_transport_arg;	/**< @brief type of transport to use.  */
   char * hpx_transport_orig;	/**< @brief type of transport to use original value given at command line.  */
   const char *hpx_transport_help; /**< @brief type of transport to use help description.  */
@@ -162,6 +159,8 @@ struct hpx_options_t
   long hpx_pwc_parceleagerlimit_arg;	/**< @brief set the largest eager parcel size (header inclusive).  */
   char * hpx_pwc_parceleagerlimit_orig;	/**< @brief set the largest eager parcel size (header inclusive) original value given at command line.  */
   const char *hpx_pwc_parceleagerlimit_help; /**< @brief set the largest eager parcel size (header inclusive) help description.  */
+  int hpx_coll_network_flag;	/**< @brief set collective implementation to network based version (override parcel collectives) (default=off).  */
+  const char *hpx_coll_network_help; /**< @brief set collective implementation to network based version (override parcel collectives) help description.  */
   enum enum_hpx_photon_backend hpx_photon_backend_arg;	/**< @brief set the underlying network API to use.  */
   char * hpx_photon_backend_orig;	/**< @brief set the underlying network API to use original value given at command line.  */
   const char *hpx_photon_backend_help; /**< @brief set the underlying network API to use help description.  */
@@ -191,6 +190,9 @@ struct hpx_options_t
   int hpx_photon_ledgersize_arg;	/**< @brief set number of ledger entries.  */
   char * hpx_photon_ledgersize_orig;	/**< @brief set number of ledger entries original value given at command line.  */
   const char *hpx_photon_ledgersize_help; /**< @brief set number of ledger entries help description.  */
+  int hpx_photon_pwcbufsize_arg;	/**< @brief set size of pwc buffers.  */
+  char * hpx_photon_pwcbufsize_orig;	/**< @brief set size of pwc buffers original value given at command line.  */
+  const char *hpx_photon_pwcbufsize_help; /**< @brief set size of pwc buffers help description.  */
   int hpx_photon_eagerbufsize_arg;	/**< @brief set size of eager buffers.  */
   char * hpx_photon_eagerbufsize_orig;	/**< @brief set size of eager buffers original value given at command line.  */
   const char *hpx_photon_eagerbufsize_help; /**< @brief set size of eager buffers help description.  */
@@ -212,13 +214,17 @@ struct hpx_options_t
   int hpx_opt_smp_arg;	/**< @brief optimize for SMP execution.  */
   char * hpx_opt_smp_orig;	/**< @brief optimize for SMP execution original value given at command line.  */
   const char *hpx_opt_smp_help; /**< @brief optimize for SMP execution help description.  */
+  int hpx_parcel_compression_flag;	/**< @brief enable parcel compression (default=off).  */
+  const char *hpx_parcel_compression_help; /**< @brief enable parcel compression help description.  */
+  long hpx_coalescing_buffersize_arg;	/**< @brief set coalescing buffer size.  */
+  char * hpx_coalescing_buffersize_orig;	/**< @brief set coalescing buffer size original value given at command line.  */
+  const char *hpx_coalescing_buffersize_help; /**< @brief set coalescing buffer size help description.  */
   
   unsigned int hpx_help_given ;	/**< @brief Whether hpx-help was given.  */
   unsigned int hpx_version_given ;	/**< @brief Whether hpx-version was given.  */
   unsigned int hpx_heapsize_given ;	/**< @brief Whether hpx-heapsize was given.  */
   unsigned int hpx_gas_given ;	/**< @brief Whether hpx-gas was given.  */
   unsigned int hpx_boot_given ;	/**< @brief Whether hpx-boot was given.  */
-  unsigned int hpx_coalescing_buffersize_given ;	/**< @brief Whether hpx-coalescing-buffersize was given.  */
   unsigned int hpx_transport_given ;	/**< @brief Whether hpx-transport was given.  */
   unsigned int hpx_network_given ;	/**< @brief Whether hpx-network was given.  */
   unsigned int hpx_statistics_given ;	/**< @brief Whether hpx-statistics was given.  */
@@ -247,6 +253,7 @@ struct hpx_options_t
   unsigned int hpx_isir_recvlimit_given ;	/**< @brief Whether hpx-isir-recvlimit was given.  */
   unsigned int hpx_pwc_parcelbuffersize_given ;	/**< @brief Whether hpx-pwc-parcelbuffersize was given.  */
   unsigned int hpx_pwc_parceleagerlimit_given ;	/**< @brief Whether hpx-pwc-parceleagerlimit was given.  */
+  unsigned int hpx_coll_network_given ;	/**< @brief Whether hpx-coll-network was given.  */
   unsigned int hpx_photon_backend_given ;	/**< @brief Whether hpx-photon-backend was given.  */
   unsigned int hpx_photon_ibdev_given ;	/**< @brief Whether hpx-photon-ibdev was given.  */
   unsigned int hpx_photon_ethdev_given ;	/**< @brief Whether hpx-photon-ethdev was given.  */
@@ -257,6 +264,7 @@ struct hpx_options_t
   unsigned int hpx_photon_fiprov_given ;	/**< @brief Whether hpx-photon-fiprov was given.  */
   unsigned int hpx_photon_fidev_given ;	/**< @brief Whether hpx-photon-fidev was given.  */
   unsigned int hpx_photon_ledgersize_given ;	/**< @brief Whether hpx-photon-ledgersize was given.  */
+  unsigned int hpx_photon_pwcbufsize_given ;	/**< @brief Whether hpx-photon-pwcbufsize was given.  */
   unsigned int hpx_photon_eagerbufsize_given ;	/**< @brief Whether hpx-photon-eagerbufsize was given.  */
   unsigned int hpx_photon_smallpwcsize_given ;	/**< @brief Whether hpx-photon-smallpwcsize was given.  */
   unsigned int hpx_photon_maxrd_given ;	/**< @brief Whether hpx-photon-maxrd was given.  */
@@ -264,6 +272,8 @@ struct hpx_options_t
   unsigned int hpx_photon_numcq_given ;	/**< @brief Whether hpx-photon-numcq was given.  */
   unsigned int hpx_photon_usercq_given ;	/**< @brief Whether hpx-photon-usercq was given.  */
   unsigned int hpx_opt_smp_given ;	/**< @brief Whether hpx-opt-smp was given.  */
+  unsigned int hpx_parcel_compression_given ;	/**< @brief Whether hpx-parcel-compression was given.  */
+  unsigned int hpx_coalescing_buffersize_given ;	/**< @brief Whether hpx-coalescing-buffersize was given.  */
 
 } ;
 

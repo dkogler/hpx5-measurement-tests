@@ -25,8 +25,8 @@
 #include <libhpx/action.h>
 #include <libhpx/debug.h>
 #include <libhpx/locality.h>
+#include <libhpx/parcel.h>
 #include <libhpx/scheduler.h>
-
 
 static int _par_for_async_handler(hpx_for_action_t f, void *args, int min,
                                   int max) {
@@ -35,7 +35,6 @@ static int _par_for_async_handler(hpx_for_action_t f, void *args, int min,
   }
   return HPX_SUCCESS;
 }
-
 static LIBHPX_ACTION(HPX_DEFAULT, 0, _par_for_async, _par_for_async_handler,
                      HPX_POINTER, HPX_POINTER, HPX_INT, HPX_INT);
 
@@ -47,11 +46,11 @@ int hpx_par_for(hpx_for_action_t f, int min, int max, void *args,
   int nthreads = HPX_THREADS;
 
   hpx_addr_t and = HPX_NULL;
+  hpx_action_t set = hpx_lco_set_action;
+  hpx_action_t del = hpx_lco_delete_action;
   if (sync) {
-    hpx_action_t set = hpx_lco_set_action;
-    hpx_action_t delete = hpx_lco_delete_action;
     and = hpx_lco_and_new(nthreads);
-    hpx_call_when_with_continuation(and, sync, set, and, delete, NULL, 0);
+    hpx_call_when_with_continuation(and, sync, set, and, del, NULL, 0);
   }
 
   const int n = max - min;
@@ -65,11 +64,10 @@ int hpx_par_for(hpx_for_action_t f, int min, int max, void *args,
     rmin = base;
     rmax = base + m + ((r-- > 0) ? 1 : 0);
     base = rmax;
-    hpx_action_t act = _par_for_async;
-    int e = hpx_call(HPX_HERE, act, and, &f, &args, &rmin, &rmax);
-    if (e) {
-      return e;
-    }
+    hpx_parcel_t *p = action_new_parcel(_par_for_async, HPX_HERE, and, set,
+                                        4, &f, &args, &rmin, &rmax);
+    parcel_prepare(p);
+    scheduler_spawn_at(p, i);
   }
 
   return HPX_SUCCESS;
@@ -90,9 +88,8 @@ int hpx_par_for_sync(hpx_for_action_t f, int min, int max, void *args) {
   return e;
 }
 
-
-/// HPX parallel "call".
-
+/// @struct par_call_async_args_t
+/// @brief HPX parallel "call".
 typedef struct {
   hpx_action_t action;
   int min;

@@ -31,6 +31,24 @@ void broadcast(A act, const global_ptr<T>& base, int blocks, size_t offset,
     throw Error(e);
   }
 } // template broadcast
+
+template <typename T, typename A, typename U, typename... Params>
+void broadcast(A act, const global_ptr<T>& base, int blocks, size_t offset,
+               const global_ptr<U>& rsync, Params... ps) {
+
+  static_assert(lco::is_lco<U>::value, "rsync must be an LCO");
+
+  size_t n = sizeof...(Params);
+  hpx_addr_t gva = base.get();
+  size_t bsize = base.bsize();
+  hpx_action_t set = hpx_lco_set_action;
+  hpx_addr_t cont = rsync.get();
+  if (int e = _hpx_gas_bcast_with_continuation(act, gva, blocks, offset, bsize,
+                                               set, cont, n, ps...)) {
+    throw Error(e);
+  }
+} // template broadcast
+
 } // namespace gas
 } // namespace hpx
 

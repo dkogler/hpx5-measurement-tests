@@ -58,6 +58,8 @@ typedef struct pwc_xport {
   int (*probe)(command_t *op, int *remaining, int rank, int *src);
   void (*pin)(const void *base, size_t bytes, void *key);
   void (*unpin)(const void *base, size_t bytes);
+  void (*create_comm)(void *comm, int rank, void* active_ranks, int num_active, int total);
+  void (*allreduce)(void *sendbuf, void* out, int count, void* datatype, void* op, void* comm);
 } pwc_xport_t;
 
 pwc_xport_t *pwc_xport_new_photon(const config_t *config, struct boot *boot,

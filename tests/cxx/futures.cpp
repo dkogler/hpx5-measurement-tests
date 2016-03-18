@@ -29,7 +29,7 @@ int test_handler(void) {
 
   hpx_exit(hpx::SUCCESS);
 }
-HPX_ACTION(HPX_DEFAULT, 0, test, test_handler);
+auto test = hpx::make_action(test_handler);
 }
 
 int main(int argc, char* argv[]) {
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     return e;
   }
 
-  if (int e = hpx::run(&test)) {
+  if (int e = test.run()) {
     return e;
   }
 

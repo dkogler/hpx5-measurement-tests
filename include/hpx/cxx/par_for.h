@@ -27,11 +27,10 @@ void parallel_for(hpx_for_action_t f, int min, int max, void *env) {
   }
 }
 
-template <template <typename> class LCO>
+template <typename T>
 void parallel_for(hpx_for_action_t f, int min, int max, void *env,
-                  const global_ptr<LCO<void>>& sync) {
-  static_assert(std::is_base_of<lco::Base<void>, LCO<void>>::value,
-                "LCO type required");
+                  const global_ptr<T>& sync) {
+  static_assert(lco::is_lco<T>::value, "LCO type required");
   if (int e = hpx_par_for(f, min, max, env, sync.get())) {
     throw Error(e);
   }

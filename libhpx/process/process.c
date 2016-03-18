@@ -24,6 +24,7 @@
 #include <libsync/sync.h>
 #include <libhpx/action.h>
 #include <libhpx/debug.h>
+#include <libhpx/events.h>
 #include <libhpx/locality.h>
 #include <libhpx/parcel.h>
 #include <libhpx/process.h>
@@ -150,11 +151,7 @@ hpx_addr_t hpx_process_new(hpx_addr_t termination) {
   }
   _init(p, termination);
   hpx_gas_unpin(process);
-
-#ifdef ENABLE_INSTRUMENTATION
-  inst_trace(HPX_INST_CLASS_PROCESS, HPX_INST_EVENT_PROCESS_NEW,
-             process, termination);
-#endif
+  EVENT_PROCESS_NEW(process, termination);
   return process;
 }
 
@@ -184,10 +181,8 @@ int _hpx_process_call(hpx_addr_t process, hpx_addr_t addr, hpx_action_t id,
   hpx_parcel_set_data(q, p, parcel_size(p));
   q->pid = 0;
   q->credit = 0;
-#ifdef ENABLE_INSTRUMENTATION
-  inst_trace(HPX_INST_CLASS_PROCESS, HPX_INST_EVENT_PROCESS_CALL,
-             process, q->pid);
-#endif
+
+  EVENT_PROCESS_CALL(process, q->pid);
   hpx_parcel_send_sync(q);
 
   parcel_delete(p);
@@ -203,9 +198,7 @@ void hpx_process_delete(hpx_addr_t process, hpx_addr_t sync) {
   }
 
   hpx_call_sync(process, _proc_delete, NULL, 0, NULL, 0);
+  EVENT_PROCESS_DELETE(process);
   hpx_gas_free(process, sync);
-#ifdef ENABLE_INSTRUMENTATION
-  inst_trace(HPX_INST_CLASS_PROCESS, HPX_INST_EVENT_PROCESS_DELETE, process);
-#endif
 }
 

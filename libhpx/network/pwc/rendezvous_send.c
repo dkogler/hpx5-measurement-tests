@@ -37,7 +37,7 @@
 void handle_rendezvous_launch(int src, command_t cmd) {
   hpx_parcel_t *p = (hpx_parcel_t*)(uintptr_t)cmd.arg;
   parcel_set_state(p, PARCEL_SERIALIZED);
-  EVENT_PARCEL_RECV(p);
+  EVENT_PARCEL_RECV(p->id, p->action, p->size, p->src, p->target);
   scheduler_spawn(p);
 }
 

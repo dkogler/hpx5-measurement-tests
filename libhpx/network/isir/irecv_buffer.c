@@ -22,6 +22,7 @@
 #include <libhpx/libhpx.h>
 #include <libhpx/network.h>
 #include <libhpx/parcel.h>
+#include <libhpx/worker.h>
 #include "irecv_buffer.h"
 #include "parcel_utils.h"
 #include "xport.h"
@@ -93,6 +94,7 @@ static int _start(irecv_buffer_t *irecvs, int i) {
   void *b = isir_network_offset(p);
   int e = irecvs->xport->irecv(b, n, tag, request);
   if (LIBHPX_OK != e) {
+    parcel_delete(p);
     return e;
   }
 
@@ -106,7 +108,7 @@ static int _start(irecv_buffer_t *irecvs, int i) {
 /// Buffer sizes can either be increased or decreased. The increase in size is
 /// saturated by the buffers limit, unless the limit is 0 in which case
 /// unbounded growth is permitted. A decrease in size could cancel active
-/// irecvs, which may in tern match real sends, so this routine returns
+/// irecvs, which may in turn match real sends, so this routine returns
 /// successfully received parcels.
 ///
 /// @param       buffer The buffer to resize.
@@ -243,7 +245,8 @@ static hpx_parcel_t *_finish(irecv_buffer_t *irecvs, int i, void *status) {
   if (here->config->gas == HPX_GAS_AGAS) {
     int to = gas_owner_of(here->gas, p->target);
     if (to != here->rank) {
-      network_send(here->network, p);
+      network_send(self->network, p);
+      irecvs->records[i].parcel = NULL;
       return NULL;
     }
   }

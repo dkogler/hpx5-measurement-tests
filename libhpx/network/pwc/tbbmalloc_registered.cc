@@ -28,7 +28,7 @@ using namespace rml;
 
 /// The transport we'll use for pinning. It's not ideal to stick it here, but we
 /// need to pin before the network has been exposed through the
-/// here->network. We can simply capture the transport since we know we'll need
+/// self->network. We can simply capture the transport since we know we'll need
 /// it anyway.
 static pwc_xport_t *_xport = NULL;
 

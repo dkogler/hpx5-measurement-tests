@@ -220,46 +220,27 @@ typedef struct {
 
 } parcel_management_vtable_t;
 
-/// @struct action_t
-/// @brief An action table action type.
+/// An action table action type.
 ///
 /// The action type uses basic multiple inheritance to implement the calling
 /// convention and call interfaces. Action types are allocated in an array, so
 /// their records contain the union of all of the fields that all of the
 /// different actions might need.
-///
-/// @var action_t::parcel_class 
-/// The parcel management vtable pointer.
-/// @var action_t::call_class 
-/// The calling convention vtable pointer.
-/// @var action_t::finish 
-/// Called to finish registration.
-/// @var action_t::fini 
-/// The destructor.
-/// @var action_t::handler 
-/// The action handler function pointer.
-/// @var action_t::id 
-/// The pointer to the action id.
-/// @var action_t::key 
-/// The pointer to the unique key for the action.
-/// @var action_t::type
-/// The action type.
-/// @var action_t::attr
-/// Type attributes.
-/// @var action_t::env
-/// Type-specific data (e.g., compiled OpenCL).
 typedef struct {
-  const parcel_management_vtable_t *parcel_class;
-  const calling_convention_vtable_t  *call_class;
-  void (*finish)(void*);
-  void (*fini)(void*);
+  const parcel_management_vtable_t *parcel_class; //!< The parcel management 
+                                                  //!< vtable pointer.
+  const calling_convention_vtable_t  *call_class; //!< The calling convention 
+                                                  //!< vtable pointer.
+  void (*finish)(void*);                          //!< Called to finish 
+                                                  //!< registration.
+  void (*fini)(void*);                            //!< The destructor.
 
-  handler_t      handler;
-  hpx_action_t       *id;
-  const char        *key;
-  hpx_action_type_t type;
-  uint32_t          attr;
-  void              *env;
+  handler_t      handler; //!< The action handler function pointer.
+  hpx_action_t       *id; //!< The pointer to the action id.
+  const char        *key; //!< The pointer to the unique key for the action.
+  hpx_action_type_t type; //!< The action type.
+  uint32_t          attr; //!< Type attributes.
+  void              *env; //!< Type-specific data (e.g., compiled OpenCL).
 } action_t;
 
 /// The libhpx action table.
@@ -435,6 +416,16 @@ static inline void action_exit(hpx_action_t id, hpx_parcel_t *p) {
   act->parcel_class->exit(act, p);
 }
 
+static const char* const HPX_ACTION_ATTR_TO_STRING[] = {
+  "NONE",
+  "MARSHALLED",
+  "PINNED",
+  "INTERNAL",
+  "VECTORED",
+  "COALESCED",
+  "COMPRESSED"
+};
+
 static inline bool action_is_pinned(hpx_action_t id) {
   CHECK_ACTION(id);
   const action_t *action = &actions[id];
@@ -464,6 +455,20 @@ static inline bool action_is_coalesced(hpx_action_t id) {
   const action_t *action = &actions[id];
   return (action->attr & HPX_COALESCED);
 }
+
+static inline bool action_is_compressed(hpx_action_t id) {
+  CHECK_ACTION(id);
+  const action_t *action = &actions[id];
+  return (action->attr & HPX_COMPRESSED);
+}
+
+static const char* const HPX_ACTION_TYPE_TO_STRING[] = {
+  "DEFAULT",
+  "TASK",
+  "INTERRUPT",
+  "FUNCTION",
+  "OPENCL"
+};
 
 static inline bool action_is_default(hpx_action_t id) {
   CHECK_ACTION(id);

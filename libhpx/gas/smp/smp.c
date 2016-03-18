@@ -253,10 +253,13 @@ _smp_local_size(void *gas) {
   dbg_error("SMP execution should not call this function\n");
 }
 
-
 static void *
 _smp_local_base(void *gas) {
   dbg_error("SMP execution should not call this function\n");
+}
+
+static uint32_t _smp_owner_of(const void *gas, hpx_addr_t addr) {
+  return here->rank;
 }
 
 static gas_t _smp_vtable = {
@@ -286,7 +289,9 @@ static gas_t _smp_vtable = {
   .alloc_local    = _smp_gas_alloc_local,
   .calloc_local   = _smp_gas_calloc_local,
   .free           = _smp_gas_free,
+  .set_attr       = NULL,
   .move           = _smp_move,
+  .owner_of       = _smp_owner_of
 };
 
 gas_t *gas_smp_new(void) {

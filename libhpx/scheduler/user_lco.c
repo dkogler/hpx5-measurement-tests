@@ -228,6 +228,7 @@ static int _user_lco_release(lco_t *lco, void *out) {
 
 // vtable
 static const lco_class_t _user_lco_vtable = {
+  .type        = LCO_USER,
   .on_fini     = _user_lco_fini,
   .on_error    = _user_lco_error,
   .on_set      = _user_lco_set,
@@ -239,6 +240,10 @@ static const lco_class_t _user_lco_vtable = {
   .on_reset    = _user_lco_reset,
   .on_size     = _user_lco_size
 };
+
+static void HPX_CONSTRUCTOR _register_vtable(void) {
+  lco_vtables[LCO_USER] = &_user_lco_vtable;
+}
 
 static int
 _user_lco_init(_user_lco_t *u, size_t size, hpx_action_t id,
@@ -293,7 +298,7 @@ hpx_addr_t hpx_lco_user_new(size_t size, hpx_action_t id, hpx_action_t op,
                             hpx_action_t predicate, void *init,
                             size_t init_size) {
   _user_lco_t *u = NULL;
-  hpx_addr_t gva = hpx_gas_calloc_local(1, sizeof(*u) + size + init_size, 0);
+  hpx_addr_t gva = lco_alloc_local(1, sizeof(*u) + size + init_size, 0);
 
   if (!hpx_gas_try_pin(gva, (void**)&u)) {
     size_t args_size = sizeof(_user_lco_t) + init_size;
@@ -320,19 +325,19 @@ hpx_addr_t hpx_lco_user_new(size_t size, hpx_action_t id, hpx_action_t op,
 
 /// Initialize a block of array of lco.
 static int
-_block_local_init_handler(_user_lco_t *lco, _user_lco_init_args_t *args) {
+_block_init_handler(_user_lco_t *lco, _user_lco_init_args_t *args) {
   int n = args->n;
   int lco_bytes = sizeof(_user_lco_t) + args->size + args->init_size;
   for (int i = 0; i < n; i++) {
     void *addr = (void *)((uintptr_t)lco + (i * lco_bytes));
     int e = _user_lco_init_handler(addr, args);
-    dbg_check(e, "_block_local_init_handler failed\n");
+    dbg_check(e, "_block_init_handler failed\n");
   }
   return HPX_SUCCESS;
 }
 
 static LIBHPX_ACTION(HPX_DEFAULT, HPX_PINNED | HPX_MARSHALLED,
-                     _block_local_init, _block_local_init_handler,
+                     _block_init, _block_init_handler,
                      HPX_POINTER, HPX_POINTER, HPX_SIZE_T);
 
 /// Allocate an array of user LCO local to the calling locality.
@@ -352,7 +357,7 @@ hpx_addr_t hpx_lco_user_local_array_new(int n, size_t size, hpx_action_t id,
                                         void *init, size_t init_size) {
   uint32_t lco_bytes = sizeof(_user_lco_t) + size + init_size;
   dbg_assert(n * lco_bytes < UINT32_MAX);
-  hpx_addr_t base = hpx_gas_alloc_local(n, lco_bytes, 0);
+  hpx_addr_t base = lco_alloc_local(n, lco_bytes, 0);
 
   size_t args_size = sizeof(_user_lco_t) + init_size;
   _user_lco_init_args_t *args = calloc(1, args_size);
@@ -364,7 +369,7 @@ hpx_addr_t hpx_lco_user_local_array_new(int n, size_t size, hpx_action_t id,
   args->init_size = init_size;
   memcpy(args->data, init, init_size);
 
-  int e = hpx_call_sync(base, _block_local_init, NULL, 0, args, args_size);
+  int e = hpx_call_sync(base, _block_init, NULL, 0, args, args_size);
   dbg_check(e, "call of _block_init_action failed\n");
 
   free(args);

@@ -31,7 +31,6 @@ struct boot;
 /// Generic object oriented interface to the global address space.
 typedef struct gas {
   libhpx_gas_t type;
-
   class_string_t string;
 
   void (*dealloc)(void *gas);
@@ -48,6 +47,7 @@ typedef struct gas {
   bool (*try_pin)(void *gas, hpx_addr_t addr, void **local);
   void (*unpin)(void *gas, hpx_addr_t addr);
   void (*free)(void *gas, hpx_addr_t addr, hpx_addr_t rsync);
+  void (*set_attr)(void *gas, hpx_addr_t addr, uint32_t attr);
 
   void (*move)(void *gas, hpx_addr_t src, hpx_addr_t dst, hpx_addr_t lco);
 
@@ -82,6 +82,14 @@ inline static void *gas_local_base(gas_t *gas) {
   assert(gas && gas->local_base);
   return gas->local_base(gas);
 }
+
+static const char* const HPX_GAS_ATTR_TO_STRING[] = {
+  "NONE",
+  "READONLY",
+  "LOAD-BALANCE",
+  "LCO"
+};
+
 
 #ifdef __cplusplus
 }

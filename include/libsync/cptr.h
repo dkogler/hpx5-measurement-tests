@@ -18,8 +18,6 @@
 #include <hpx/attributes.h>
 #include "sync.h"
 
-/// @struct cptr_t
-/// ----------------------------------------------------------------------------
 /// A "counted pointer" structure.
 ///
 /// This common pattern is used in non-blocking algorithms where CAS is the
@@ -28,27 +26,20 @@
 /// 64-bits worth of CAS operations.
 ///
 /// It relies on having access to a CAS that is twice as big as a pointer.
-///
-/// @var cptr_t::p
-/// the actual pointer that we're protecting
-/// @var cptr_t::c
-/// the count of the number of times this pointer has been CASed
-/// ----------------------------------------------------------------------------
 #ifdef __LP64__
-typedef struct {
-  void *p;
-  uint64_t c;
-} cptr_t __attribute__((aligned(16)));
+typedef struct HPX_ALIGNED(16) {
+  void *p;     //!< the actual pointer that we're protecting
+  uint64_t c;  //!< the count of the number of times this pointer has been CASed
+} cptr_t;
 #else
-typedef struct {
+typedef struct HPX_ALIGNED(8) {
   void *p;
   uint32_t c;
-} cptr_t __attribute__((aligned(8)));
+} cptr_t;
 #endif
 
 #define SYNC_CPTR_INITIALIZER { .p = NULL, .c = 0 }
 
-/// ----------------------------------------------------------------------------
 /// CAS a counter pointer.
 ///
 /// This performs a compare-and-swap of the counted pointer, attempting to
@@ -63,31 +54,25 @@ typedef struct {
 void sync_cptr_cas_val(volatile cptr_t *ptr, const cptr_t *from, const void *to)
   HPX_PUBLIC;
 
-/// ----------------------------------------------------------------------------
 /// CAS a counted pointer.
 ///
 /// This performs a compare-and-swap of the counted pointer, returning true if
 /// it succeeds and false if it fails. Pass the from by-value, and don't tell
 /// gcc about it, because it doesn't make any
-/// ----------------------------------------------------------------------------
 bool sync_cptr_cas(volatile cptr_t *ptr, const cptr_t *from, const void *to)
   HPX_PUBLIC;
 
-/// ----------------------------------------------------------------------------
 /// Checks to see if a counted pointer has changed.
 ///
 /// Because we need to use an atomic cmpchg16b to read a location anyway, we can
 /// find out if it has changed by supplying an expected value.
-/// ----------------------------------------------------------------------------
 bool sync_cptr_is_consistent(volatile cptr_t *ptr, const cptr_t *val)
   HPX_PUBLIC;
 
-/// ----------------------------------------------------------------------------
 /// Atomically load a counted pointer.
 ///
 /// For x86_64, which we've implemented here, the only valid way to read a 16
 /// byte memory address atomically is with the cmpxch16b instruction.
-/// ----------------------------------------------------------------------------
 void sync_cptr_load(volatile cptr_t *ptr, cptr_t *out) HPX_PUBLIC;
 
 #endif // HPX_SYNC_CPTR_H

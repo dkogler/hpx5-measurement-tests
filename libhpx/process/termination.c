@@ -64,16 +64,18 @@ bitmap_t *cr_bitmap_new(void) {
   bitmap_t *b = NULL;
   int e = posix_memalign((void**)&b, HPX_CACHELINE_SIZE,
                          _bitmap_num_pages * sizeof(_bitmap_page_t));
-  if (e)
+  if (e) {
     dbg_error("failed to allocate a bitmap for %u pages\n", _bitmap_num_pages);
+  }
   memset(b, 0, _bitmap_num_pages * sizeof(_bitmap_page_t));
 
   // allocate the first page
   void *p = NULL;
   e = posix_memalign((void**)&p, HPX_CACHELINE_SIZE,
                      _bitmap_num_words * sizeof(_bitmap_word_t));
-  if (e)
+  if (e) {
     dbg_error("failed to allocate a page for %u words\n", _bitmap_num_words);
+  }
 
   memset(p, 0, _bitmap_num_words * sizeof(_bitmap_word_t));
   sync_store(&b[0].page, p, SYNC_RELEASE);
@@ -85,8 +87,9 @@ void cr_bitmap_delete(bitmap_t *b) {
   // delete all pages
   for (int i = 0; i < _bitmap_num_pages; ++i) {
     _bitmap_page_t p = sync_load(&b[i].page, SYNC_ACQUIRE);
-    if (p)
+    if (p) {
       free((void*)p);
+    }
   }
   free(b);
 }
@@ -100,8 +103,9 @@ void _bitmap_add_at(bitmap_t *b, uint32_t page, uint32_t word, uint32_t offset) 
   // if there was an overflow, add to the previous word
   if ((old + mask) < mask) {
     if (word == 0) {
-      if (page > 0)
+      if (page > 0) {
         page--;
+      }
       word = _bitmap_num_words;
     }
     _bitmap_add_at(b, page, word-1, 0);
@@ -111,10 +115,12 @@ void _bitmap_add_at(bitmap_t *b, uint32_t page, uint32_t word, uint32_t offset) 
 // set a bit at index i and then test if the bit at the 0th
 // position (page 0 word 0) is set
 uint64_t cr_bitmap_add_and_test(bitmap_t *b, int64_t i) {
-  if (!i) return false;
-  uint32_t page = (i-1)/_bitmap_num_pages;
+  if (!i) {
+    return 0;
+  }
+  uint32_t page      = (i-1)/_bitmap_num_pages;
   uint32_t pg_offset = (i-1)%_bitmap_page_size;
-  uint32_t word = pg_offset/_bitmap_word_size;
+  uint32_t word      = pg_offset/_bitmap_word_size;
 
   int word_offset = (_bitmap_word_size-1) - (pg_offset%_bitmap_word_size);
   _bitmap_add_at(b, page, word, word_offset);

@@ -26,18 +26,18 @@
 /// This must match the transfer.S asm file usage.
 ///
 /// This should be managed in an asm-specific manner.
-typedef struct {
-  thread_entry_t    x19; // used to hold f(), called by align_stack_trampoline
-  void             *x20; // we use this to hold the parcel that is passed to f()
-  void         *regs[8]; // x21-x28
-  void             *x29; // The frame pointer
-  void     (*x30)(void); // return address - set to align_stack_trampoline
+typedef struct HPX_PACKED {
+  thread_entry_t    x19; //!< used to hold f(), called by align_stack_trampoline
+  void             *x20; //!< we use this to hold the parcel that is passed to f()
+  void         *regs[8]; //!< x21-x28
+  void             *x29; //!< The frame pointer
+  void     (*x30)(void); //!< return address - set to align_stack_trampoline
   void   *vfp_alignment;
   void           *fpscr;
   void      *vfpregs[8];
   void         *top_x19;
   void (*top_x30)(void);
-} HPX_PACKED _frame_t;
+} _frame_t;
 
 void *transfer_frame_init(void *top, hpx_parcel_t *p, thread_entry_t f) {
   // wants 16 byte alignment, so we adjust the top pointer if necessary

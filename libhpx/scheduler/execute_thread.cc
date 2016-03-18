@@ -24,9 +24,10 @@
 /// _Unwind_ForcedUnwind, however that technique had problems with some of our
 /// arm platforms.
 #include <libhpx/action.h>
+#include <libhpx/events.h>
 #include <libhpx/parcel.h>
 #include <libhpx/worker.h>
-#include "events.h"
+
 
 namespace {
   /// A local exception type used to propagate the status from

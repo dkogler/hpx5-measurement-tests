@@ -14,8 +14,6 @@
 #ifndef LIBHPX_INSTRUMENTATION_FILE_HEADER_H
 #define LIBHPX_INSTRUMENTATION_FILE_HEADER_H
 
-#include <hpx/hpx.h>
-
 /// The header needed for our data file format
 typedef struct {
   const char magic_number[8];
@@ -24,13 +22,13 @@ typedef struct {
   char header_data[];
 } logtable_header_t;
 
-#define _LOGTABLE_HEADER                                        \
-  {                                                             \
-    .magic_number = {'h', 'p', 'x', ' ', 'l', 'o', 'g', '\0'},  \
-      .order = 0xFF00AA55                                       \
-         }
+#define _LOGTABLE_HEADER                                       \
+  {                                                            \
+    .magic_number = {'h', 'p', 'x', ' ', 'l', 'o', 'g', '\0'}, \
+    .order = 0xFF00AA55                                        \
+  }
 
-extern logtable_header_t LOGTABLE_HEADER; // == _LOGTABLE_HEADER
+extern logtable_header_t LOGTABLE_HEADER;
 
 size_t write_trace_header(void* base, int class, int id);
 

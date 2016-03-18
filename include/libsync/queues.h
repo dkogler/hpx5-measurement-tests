@@ -16,16 +16,14 @@
 
 /// ----------------------------------------------------------------------------
 /// @file include/libsync/queues.h
-/// ----------------------------------------------------------------------------
-#include <config.h>
-#include <hpx/attributes.h>
-#include "cptr.h"
-
-
 /// M&S two lock queue from
 /// http://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf, implemented
 /// based on
 /// https://www.cs.rochester.edu/research/synchronization/pseudocode/queues.html#tlq
+#include <config.h>
+#include <hpx/attributes.h>
+#include "cptr.h"
+
 
 typedef struct two_lock_queue_node two_lock_queue_node_t;
 struct two_lock_queue_node {
@@ -33,15 +31,16 @@ struct two_lock_queue_node {
   void *value;
 };
 
-
+/// @struct two_lock_queue_t
+/// @brief
 /// Using SWAP on the head and tail pointers for locking. Could use something
 /// more scalable if higher contention.
-typedef struct {
+typedef struct HPX_ALIGNED(64){
   two_lock_queue_node_t *head;
   const char _paddinga[HPX_CACHELINE_SIZE - sizeof(two_lock_queue_node_t*)];
   two_lock_queue_node_t *tail;
   const char _paddingb[HPX_CACHELINE_SIZE - sizeof(two_lock_queue_node_t*)];
-} HPX_ALIGNED(64) two_lock_queue_t;
+} two_lock_queue_t;
 
 #define SYNC_TWO_LOCK_QUEUE_INIT {              \
     .head = NULL,                               \

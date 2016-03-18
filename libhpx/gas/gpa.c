@@ -105,11 +105,27 @@ static hpx_addr_t _add_cyclic(hpx_addr_t gpa, int64_t n, uint32_t bsize,
     return gpa + n;
   }
 
-  const uint32_t phase = (_phase_of(gpa, bsize) + n) % bsize;
-  const uint32_t blocks = (_phase_of(gpa, bsize) + n) / bsize;
-  const uint32_t rank = (gpa_to_rank(gpa) + blocks) % here->ranks;
-  const uint32_t cycles = (gpa_to_rank(gpa) + blocks) / here->ranks;
-  const uint64_t block = _block_of(gpa, bsize) + cycles;
+  uint32_t phase, rank, cycles, block;
+  int64_t  blocks;
+
+  if (_phase_of(gpa, bsize) + n >= 0) {
+    phase = (_phase_of(gpa, bsize) + n) % bsize;
+    blocks = (_phase_of(gpa, bsize) + n) / bsize;
+    rank = (gpa_to_rank(gpa) + blocks) % here->ranks;
+    cycles = (gpa_to_rank(gpa) + blocks) / here->ranks;
+  } else {
+    phase = (bsize + (_phase_of(gpa, bsize) + n) % bsize) % bsize;
+    blocks = (_phase_of(gpa, bsize) + n + 1) / bsize - 1;
+    if (gpa_to_rank(gpa) + blocks >= 0) {
+      rank = (gpa_to_rank(gpa) + blocks) % here->ranks;
+      cycles = (gpa_to_rank(gpa) + blocks) / here->ranks;
+    } else {
+      rank = (here->ranks + (gpa_to_rank(gpa) + blocks) % 
+              here->ranks) % here->ranks;
+      cycles = (gpa_to_rank(gpa) + blocks + 1) / here->ranks - 1;
+    }
+  }
+  block = _block_of(gpa, bsize) + cycles;
 
   const hpx_addr_t addr = _triple_to_gpa(rank, block, phase, bsize);
   if (!check) {

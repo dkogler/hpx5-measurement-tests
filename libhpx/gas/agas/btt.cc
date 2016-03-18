@@ -32,8 +32,7 @@ namespace {
     uint32_t attr;
     Entry() : count(0), owner(0), lva(NULL), blocks(1), onunpin(NULL), attr(0) {
     }
-    Entry(int32_t o, void *l, size_t b, hpx_parcel_t *p, uint32_t a) : count(0), owner(o), lva(l), blocks(b), onunpin(p), attr(a)
-    {
+    Entry(int32_t o, void *l, size_t b, uint32_t a) : count(0), owner(o), lva(l), blocks(b), onunpin(NULL), attr(a) {
     }
   };
 
@@ -45,10 +44,6 @@ namespace {
     hpx_parcel_t *attachParcel(gva_t gva, hpx_parcel_t *p);
     bool tryPin(gva_t gva, void** lva);
     hpx_parcel_t *unpin(gva_t gva);
-    void *lookup(gva_t gva) const;
-    uint32_t getOwner(gva_t gva) const;
-    void setOwner(gva_t gva, uint32_t owner) const;
-    size_t getBlocks(gva_t gva) const;
   };
 }
 
@@ -77,23 +72,22 @@ BTT::attachParcel(gva_t gva, hpx_parcel_t *p) {
 bool
 BTT::tryPin(gva_t gva, void** lva) {
   uint64_t key = gva_to_key(gva);
-  bool ret = true;
+  bool ret = false;
   bool found = update_fn(key, [&](Entry& entry) {
-      if (!lva) {
-        return;
-      }
-
       // If we do not own the block or if there is a pending delete on
       // this block, the try-pin operation fails.
       if (entry.owner != here->rank || entry.onunpin != NULL) {
-        ret = false;
         return;
       }
 
       assert(entry.count >= 0);
       entry.count++;
-      // printf("%lu %d ++\n", key, entry.count);
-      *lva = (char*)(entry.lva) + gva_to_block_offset(gva);
+      ret = true;
+
+      if (lva) {
+        // printf("%lu %d ++\n", key, entry.count);
+        *lva = (char*)(entry.lva) + gva_to_block_offset(gva);
+      }
     });
   return found && ret;
 }
@@ -119,55 +113,6 @@ BTT::unpin(gva_t gva) {
 }
 
 void *
-BTT::lookup(gva_t gva) const {
-  Entry entry;
-  uint64_t key = gva_to_key(gva);
-  bool found = find(key, entry);
-  if (found) {
-    return entry.lva;
-  }
-  else {
-    return NULL;
-  }
-}
-
-uint32_t
-BTT::getOwner(gva_t gva) const {
-  Entry entry;
-  uint64_t key = gva_to_key(gva);
-  bool found = find(key, entry);
-  if (found) {
-    return entry.owner;
-  }
-  else {
-    return gva.bits.home;
-  }
-}
-
-void
-BTT::setOwner(gva_t gva, uint32_t owner) const {
-  Entry entry;
-  uint64_t key = gva_to_key(gva);
-  bool found = find(key, entry);
-  if (found) {
-    entry.owner = owner;
-  }
-}
-
-size_t
-BTT::getBlocks(gva_t gva) const {
-  Entry entry;
-  uint64_t key = gva_to_key(gva);
-  bool found = find(key, entry);
-  if (found) {
-    return entry.blocks;
-  }
-  else {
-    return 0;
-  }
-}
-
-void *
 btt_new(size_t size) {
   return new BTT(size);
 }
@@ -183,7 +128,7 @@ btt_insert(void *obj, gva_t gva, uint32_t owner, void *lva, size_t blocks,
            uint32_t attr) {
   BTT *btt = static_cast<BTT*>(obj);
   uint64_t key = gva_to_key(gva);
-  bool inserted = btt->insert(key, Entry(owner, lva, blocks, NULL, attr));
+  bool inserted = btt->insert(key, Entry(owner, lva, blocks, attr));
   assert(inserted);
   (void)inserted;
 }
@@ -215,19 +160,71 @@ btt_unpin(void* obj, gva_t gva) {
 void *
 btt_lookup(const void* obj, gva_t gva) {
   const BTT *btt = static_cast<const BTT*>(obj);
-  return btt->lookup(gva);
+  Entry entry;
+  uint64_t key = gva_to_key(gva);
+  bool found = btt->find(key, entry);
+  if (found) {
+    return entry.lva;
+  }
+  else {
+    return NULL;
+  }
 }
 
-uint32_t
-btt_owner_of(const void* obj, gva_t gva) {
+bool
+btt_get_owner(const void* obj, gva_t gva, uint32_t *owner) {
   const BTT *btt = static_cast<const BTT*>(obj);
-  return btt->getOwner(gva);
+  Entry entry;
+  uint64_t key = gva_to_key(gva);
+  bool found = btt->find(key, entry);
+  if (owner) {
+    *owner = found ? entry.owner : gva.bits.home;
+  }
+  return found;
+}
+
+void
+btt_set_owner(void* obj, gva_t gva, uint32_t owner) {
+  BTT *btt = static_cast<BTT*>(obj);
+  Entry entry;
+  uint64_t key = gva_to_key(gva);
+  bool found = btt->update_fn(key, [&](Entry& entry) {
+      entry.owner = owner;
+    });
+  assert(found);
+}
+
+bool
+btt_get_attr(const void* obj, gva_t gva, uint32_t *attr) {
+  const BTT *btt = static_cast<const BTT*>(obj);
+  Entry entry;
+  uint64_t key = gva_to_key(gva);
+  bool found = btt->find(key, entry);
+  *attr = found ? entry.attr : HPX_GAS_ATTR_NONE;
+  return found;
+}
+
+void
+btt_set_attr(void* obj, gva_t gva, uint32_t attr) {
+  BTT *btt = static_cast<BTT*>(obj);
+  Entry entry;
+  uint64_t key = gva_to_key(gva);
+  bool found = btt->update_fn(key, [&](Entry& entry) {
+      entry.attr |= attr;
+    });
+  assert(found);
 }
 
 size_t
 btt_get_blocks(const void* obj, gva_t gva) {
   const BTT *btt = static_cast<const BTT*>(obj);
-  return btt->getBlocks(gva);
+  Entry entry;
+  uint64_t key = gva_to_key(gva);
+  bool found = btt->find(key, entry);
+  if (found) {
+    return entry.blocks;
+  }
+  return 0;
 }
 
 int
@@ -305,8 +302,7 @@ int btt_remove_when_count_zero(void *obj, gva_t gva, void **lva) {
 }
 
 int btt_try_move(void *obj, gva_t gva, int rank, void **lva, uint32_t *attr) {
-  BTT *btt = static_cast<BTT*>(obj);
   int e = _btt_wait_until_count_zero(obj, gva, lva, attr);
-  btt->setOwner(gva, rank);
+  btt_set_owner(obj, gva, rank);
   return e;
 }

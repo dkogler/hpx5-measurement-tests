@@ -56,7 +56,7 @@ int pwc_memget(void *obj, void *to, hpx_addr_t from, size_t size,
     }
   }
 
-  return pwc_get(obj, to, from, size, lcmd, rcmd);
+  return pwc_get(pwc_network, to, from, size, lcmd, rcmd);
 }
 /// @}
 
@@ -72,7 +72,6 @@ int pwc_memget(void *obj, void *to, hpx_addr_t from, size_t size,
 /// we're not actually handling this correctly.
 /// @{
 typedef struct {
-  void        *obj;
   void         *to;
   hpx_addr_t  from;
   size_t         n;
@@ -95,13 +94,12 @@ static void _pwc_memget_rsync_continuation(hpx_parcel_t *p, void *env) {
     }
   }
 
-  dbg_check( pwc_get(e->obj, e->to, e->from, e->n, lcmd, rcmd) );
+  dbg_check( pwc_get(pwc_network, e->to, e->from, e->n, lcmd, rcmd) );
 }
 
 int pwc_memget_rsync(void *obj, void *to, hpx_addr_t from, size_t n,
                      hpx_addr_t lsync) {
   _pwc_memget_rsync_env_t env = {
-    .obj    = obj,
     .to     = to,
     .from  = from,
     .n     = n,
@@ -116,7 +114,6 @@ int pwc_memget_rsync(void *obj, void *to, hpx_addr_t from, size_t n,
 ///
 /// This doesn't return until the memget operation has completed.
 typedef struct {
-  void   *network;
   void        *to;
   hpx_addr_t from;
   size_t        n;
@@ -129,12 +126,11 @@ static void _pwc_memget_lsync_continuation(hpx_parcel_t *p, void *env) {
     .arg = (uintptr_t)p
   };
   command_t rcmd = { 0 };
-  dbg_check( pwc_get(e->network, e->to, e->from, e->n, lcmd, rcmd) );
+  dbg_check( pwc_get(pwc_network, e->to, e->from, e->n, lcmd, rcmd) );
 }
 
 int pwc_memget_lsync(void *obj, void *to, hpx_addr_t from, size_t size) {
   _pwc_memget_lsync_env_t env = {
-    .network = obj,
     .to = to,
     .from = from,
     .n = size
